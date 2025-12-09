@@ -1,0 +1,26 @@
+spring:
+  # 数据库连接配置
+  datasource:
+    url: jdbc:mysql://localhost:3306/canteen?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+# 移除单独的mybatis配置，统一用mybatis-plus配置（避免冲突）
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml  # Mapper.xml文件路径
+  type-aliases-package: com.boda.canteen.entity  # 修正实体类包名（原配置是com.company，实际是com.boda）
+  configuration:
+    map-underscore-to-camel-case: false  # 关闭下划线转驼峰（关键！）
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 打印SQL日志
+  global-config:
+    db-config:
+      id-type: AUTO  # 主键自增
+      table-prefix: "" # 无表前缀
+
+# 服务端口
+server:
+  port: 8088
+  servlet:
+    session:
+      timeout: 30m # 补充Session超时配置，避免验证码失效
