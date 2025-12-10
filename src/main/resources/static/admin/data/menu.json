@@ -35,14 +35,14 @@
 			},
 			{
 				"id": 302,
-				"title": "本周菜单",
+				"title": "本日菜单",
 				"type": 1,
 				"openType": "_iframe",
 				"href": "/back/toMenu"
 			},
 			{
 				"id": 303,
-				"title": "下周菜单",
+				"title": "明日菜单",
 				"type": 1,
 				"openType": "_iframe",
 				"href": "/back/toNextMenu"

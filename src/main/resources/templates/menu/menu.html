@@ -2,7 +2,7 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="utf-8">
-    <title>本周菜单</title>
+    <title>本日菜单</title>
     <link rel="stylesheet" th:href="@{/component/pear/css/pear.css}" />
 </head>
 <body class="pear-container">
@@ -118,7 +118,7 @@
 
         table.render({
             elem: '#user-table',
-            url: '/menu/pageThisWeek',
+            url: '/menu/pageToday',
             page: true,
             parseData:function(res) {
                 return {

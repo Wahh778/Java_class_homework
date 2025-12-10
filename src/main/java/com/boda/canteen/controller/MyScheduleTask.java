@@ -74,33 +74,62 @@ public class MyScheduleTask {
         LambdaQueryWrapper<ShopCart> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.or();
         shopCartService.remove(queryWrapper);
-        log.info("本周已结束，自动清除所有用户购物车");
+        log.info("本日已结束，自动清除所有用户购物车");
     }
 
     /**
      * 每周周天23:00:00分自动统计该周的所有菜品并归纳为这周历史菜单
      */
-    @Scheduled(cron = "0 0 23 ? * 1")
+//    @Scheduled(cron = "0 0 23 ? * 1")
+//    public void addHistoryMenu() {
+//        History history = new History();
+//        // 获取当前时间的一周的开始与结尾
+//        Date weekOfBeginTime = MyTimeUtils.getWeekOfBeginTime();
+//        Date weekOfEndTime = MyTimeUtils.getWeekOfEndTime();
+//        String weekOfBeginTimeStr = DateUtil.formatDate(weekOfBeginTime);
+//        String weekOfEndTimeStr = DateUtil.formatDate(weekOfEndTime);
+//        // 设置时间范围
+//        history.setTimeRange(weekOfBeginTimeStr + "~" + weekOfEndTimeStr);
+//        // 设置menuIds 通过字符串拼接这一周的所有菜单编号
+//        StringBuilder sb = new StringBuilder();
+//        LambdaQueryWrapper<Menu> queryWrapper = new LambdaQueryWrapper<>();
+//        queryWrapper.between(Menu::getCreateTime, weekOfBeginTime, weekOfEndTime);
+//        List<Menu> menuList = menuService.list(queryWrapper);
+//        for (Menu m : menuList) {
+//            sb.append(m.getMenuId()).append(",");
+//        }
+//        history.setMenuIds(sb.substring(0, sb.length() - 1));
+//        // 加入数据库
+//        boolean res = historyService.save(history);
+//        log.info("自动收集历史菜单：{}", res ? "成功" : "失败");
+//    }
+    /**
+     * 每天23:00:00自动统计当天的菜品并归纳为历史菜单（根据实际业务调整逻辑）
+     */
+    @Scheduled(cron = "0 0 23 * * ?")
     public void addHistoryMenu() {
+        // 注意：如果需要按天统计，需修改时间范围逻辑
+        // 原逻辑是按周统计，建议根据实际需求调整getWeekOfBeginTime()和getWeekOfEndTime()为当天时间范围
         History history = new History();
-        // 获取当前时间的一周的开始与结尾
-        Date weekOfBeginTime = MyTimeUtils.getWeekOfBeginTime();
-        Date weekOfEndTime = MyTimeUtils.getWeekOfEndTime();
-        String weekOfBeginTimeStr = DateUtil.formatDate(weekOfBeginTime);
-        String weekOfEndTimeStr = DateUtil.formatDate(weekOfEndTime);
-        // 设置时间范围
-        history.setTimeRange(weekOfBeginTimeStr + "~" + weekOfEndTimeStr);
-        // 设置menuIds 通过字符串拼接这一周的所有菜单编号
+        Date todayBegin = DateUtil.beginOfDay(DateUtil.date()); // 当天开始时间
+        Date todayEnd = DateUtil.endOfDay(DateUtil.date());     // 当天结束时间
+        String timeRange = DateUtil.formatDate(todayBegin) + "~" + DateUtil.formatDate(todayEnd);
+        history.setTimeRange(timeRange);
+
+        // 后续逻辑保持不变（查询当天菜单并保存）
         StringBuilder sb = new StringBuilder();
         LambdaQueryWrapper<Menu> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.between(Menu::getCreateTime, weekOfBeginTime, weekOfEndTime);
+        queryWrapper.between(Menu::getCreateTime, todayBegin, todayEnd);
         List<Menu> menuList = menuService.list(queryWrapper);
         for (Menu m : menuList) {
             sb.append(m.getMenuId()).append(",");
         }
-        history.setMenuIds(sb.substring(0, sb.length() - 1));
-        // 加入数据库
-        boolean res = historyService.save(history);
-        log.info("自动收集历史菜单：{}", res ? "成功" : "失败");
+        if (sb.length() > 0) {
+            history.setMenuIds(sb.substring(0, sb.length() - 1));
+            boolean res = historyService.save(history);
+            log.info("自动收集当日历史菜单：{}", res ? "成功" : "失败");
+        } else {
+            log.info("当日无菜单数据，无需收集");
+        }
     }
 }
