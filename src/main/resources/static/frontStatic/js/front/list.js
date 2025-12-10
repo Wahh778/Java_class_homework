@@ -1,7 +1,7 @@
 $(document).ready(function (){
     $("[name='finishList']").click(function (){
         // 创建get请求路径
-        let downloadUrl = "http://localhost:8888/front/print";
+        let downloadUrl = "http://localhost:8088/front/print";
         // 创建a标签
         let label = $("<a>");
         // 添加属性
