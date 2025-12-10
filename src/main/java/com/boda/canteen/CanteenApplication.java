@@ -15,7 +15,8 @@ public class CanteenApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(CanteenApplication.class, args);
-        log.info("canteen启动成功 (●'◡'●)");
+        //log.info("canteen启动成功 (●'◡'●)");
+
 
     }
 }
