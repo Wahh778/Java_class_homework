@@ -2,6 +2,7 @@
 	width: 320px !important;
 	margin: auto !important;
 	margin-top: 160px !important;
+
 }
 
 .layui-form button {
@@ -9,8 +10,20 @@
 	height: 44px !important;
 	line-height: 44px !important;
 	font-size: 16px !important;
-	background-color: #5FB878 !important;
+	/*background-color: #a6a6a6 !important;*/
+	/*font-weight: 550 !important;*/
+	background-color: #9a6e3a !important;
+	color: #fff !important;
 	font-weight: 550 !important;
+	border-radius: 4px !important;
+	transition: all 0.3s ease !important;
+	border: none !important;
+}
+/* 按钮hover效果：加深色调+轻微上浮 */
+.layui-form button:hover {
+	background-color: #7a4a0a !important;
+	transform: translateY(-2px) !important;
+	box-shadow: 0 4px 12px rgba(152, 95, 13, 0.2) !important;
 }
 
 .layui-form-checked[lay-skin=primary] i {
@@ -33,15 +46,24 @@
 	height: 44px !important;
 	line-height: 44px !important;
 	padding-left: 15px !important;
-	border-radius: 3px !important;
+	border-radius: 4px !important;
+	/* 浅暖边框，契合整体色调 */
+	border: 1px solid #e8d8c0 !important;
+	transition: all 0.2s ease !important;
 }
 
 .layui-input:focus {
-	box-shadow: 0px 0px 2px 1px #5FB878 !important;
+	/*box-shadow: 0px 0px 2px 1px #5FB878 !important;*/
+	box-shadow: 0px 0px 3px 1px rgba(152, 95, 13, 0.3) !important;
+	border-color: #985f0d !important;
+	outline: none !important;
 }
 
 .layui-form-danger:focus{
+	/*box-shadow: 0px 0px 2px 1px #f56c6c !important;*/
 	box-shadow: 0px 0px 2px 1px #f56c6c !important;
+	border-color: #f56c6c !important;
+
 }
 
 .logo {
@@ -55,27 +77,35 @@
 	font-size: 30px !important;
 	font-weight: 550 !important;
 	margin-left: 20px !important;
-	color: #5FB878 !important;
+	color: #985f0d !important;
 	display: inline-block !important;
 	height: 60px !important;
 	line-height: 60px !important;
 	margin-top: 10px !important;
 	position: absolute !important;
+
+
 }
 
 .desc {
 	width: 100% !important;
 	text-align: center !important;
-	color: gray !important;
+	/*color: gray !important;*/
+	color: #8a6e42 !important; /* 暖灰，契合主色调 */
 	height: 60px !important;
 	line-height: 60px !important;
+	font-size: 14px !important;
 }
 
 body {
 	background-repeat:no-repeat;
-	background-color: whitesmoke;
+	/*background-color: whitesmoke;*/
+	background-color: #f9f5ef !important; /* 暖白底色，替代原whitesmoke */
 	background-size: 100%;
 	height: 100%;
+	/* 新增：轻微滤镜，强化复古感 */
+	filter: brightness(0.98) contrast(1.02) !important;
+
  }
 
 .code {

@@ -56,7 +56,8 @@ body,
 }
 
 .pear-admin.banner-layout .layui-header.dark-theme {
-	box-shadow: 2px 0 6px rgb(0 21 41 / 35%);
+	/*box-shadow: 2px 0 6px rgb(0 21 41 / 35%);*/
+	box-shadow: 2px 0 6px rgb(152 95 13 / 35%); /* 替换阴影为暖棕色调 */
 }
 
 .pear-admin .layui-header .layui-logo {
@@ -68,11 +69,13 @@ body,
 }
 
 .pear-admin .layui-layout-right .layui-nav-child {
-	border: 1px solid whitesmoke;
+	/*border: 1px solid whitesmoke;*/
+	border: 1px solid #e8d8c0; /* 暖棕边框，匹配登录页 */
 	border-radius: 4px;
 	width: auto;
 	left: auto;
 	right: -23px;
+	background-color: rgba(255,255,255,0.95); /* 半透暖白 */
 }
 
 .pear-admin .layui-header {
@@ -154,8 +157,8 @@ body,
 
 .pear-admin .layui-footer {
 	position: absolute;
-    display: flex;
-    justify-content: space-between;
+	display: flex;
+	justify-content: space-between;
 	left: 230px;
 	background: #fff;
 	border-top: 1px solid #F2F2F2;

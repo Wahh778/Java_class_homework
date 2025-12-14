@@ -101,40 +101,40 @@
         <div class="mdl-grid demo-content">
             <div class="demo-charts mdl-color--white mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-grid">
                 <div class="tab-content">
-                        <table class="table" cellpadding="6" cellspacing="1">
-                            <thead>
-                            <th style="border: 0 solid transparent">
-                            </th>
-                            </thead>
-                            <tbody>
-                            <tr>
-                                <th style="border: 0 solid transparent" class="tl">用户昵称</th>
-                                <td style="border: 0 solid transparent" class="tr" id="nameVal" th:text="${session.currUser.name}">无</td>
-                            </tr>
-                            <tr>
-                                <th style="border: 0 solid transparent" class="tl">用户账号</th>
-                                <td style="border: 0 solid transparent" class="tr" id="usernameVal" th:text="${session.currUser.username}">无</td>
-                            </tr>
-                            <tr>
-                                <th style="border: 0 solid transparent" class="tl">性别</th>
-                                <td style="border: 0 solid transparent" class="tr" id="sexVal" th:text="${session.currUser.sex}">无</td>
-                            </tr>
-                            <tr>
-                                <th style="border: 0 solid transparent" class="tl">部门</th>
-                                <td style="border: 0 solid transparent" class="tr" id="departmentVal" th:text="${session.currUser.department}">无</td>
-                            </tr>
-                            <tr>
-                                <th style="border: 0 solid transparent" class="tl">手机号</th>
-                                <td style="border: 0 solid transparent" class="tr" id="telephoneVal" th:text="${session.currUser.telephone}">无</td>
-                            </tr>
-                            <tr>
-                                <th style="border: 0 solid transparent" class="tl">角色</th>
-                                <td style="border: 0 solid transparent" class="tr" id="roleVal" th:text="${session.currUser.role}">无</td>
-                            </tr>
-                            <input type="hidden" th:value="${session.currUser.password}" id="Psw"/>
-                            </tbody>
-                        </table>
-                    </div>
+                    <table class="table" cellpadding="6" cellspacing="1">
+                        <thead>
+                        <th style="border: 0 solid transparent">
+                        </th>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <th style="border: 0 solid transparent" class="tl">用户昵称</th>
+                            <td style="border: 0 solid transparent" class="tr" id="nameVal" th:text="${session.currUser.name}">无</td>
+                        </tr>
+                        <tr>
+                            <th style="border: 0 solid transparent" class="tl">用户账号</th>
+                            <td style="border: 0 solid transparent" class="tr" id="usernameVal" th:text="${session.currUser.username}">无</td>
+                        </tr>
+                        <tr>
+                            <th style="border: 0 solid transparent" class="tl">性别</th>
+                            <td style="border: 0 solid transparent" class="tr" id="sexVal" th:text="${session.currUser.sex}">无</td>
+                        </tr>
+                        <tr>
+                            <th style="border: 0 solid transparent" class="tl">部门</th>
+                            <td style="border: 0 solid transparent" class="tr" id="departmentVal" th:text="${session.currUser.department}">无</td>
+                        </tr>
+                        <tr>
+                            <th style="border: 0 solid transparent" class="tl">手机号</th>
+                            <td style="border: 0 solid transparent" class="tr" id="telephoneVal" th:text="${session.currUser.telephone}">无</td>
+                        </tr>
+                        <tr>
+                            <th style="border: 0 solid transparent" class="tl">角色</th>
+                            <td style="border: 0 solid transparent" class="tr" id="roleVal" th:text="${session.currUser.role}">无</td>
+                        </tr>
+                        <input type="hidden" th:value="${session.currUser.password}" id="Psw"/>
+                        </tbody>
+                    </table>
+                </div>
                 <div class="mdl-card__actions mdl-card--border">
                     <button class="templatemo-blue-button" id="changePsw"><h5>修改密码</h5></button>
                 </div>
