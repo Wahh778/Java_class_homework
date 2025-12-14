@@ -3,38 +3,49 @@ package com.boda.canteen.interception;
 import cn.hutool.core.date.DateUtil;
 import com.boda.canteen.common.R;
 import com.boda.canteen.common.ResponseUtil;
+import com.boda.canteen.entity.TimeConfig;
+import com.boda.canteen.security.service.TimeConfigService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component; // 新增注解
 import org.springframework.web.servlet.HandlerInterceptor;
 
 /**
  * 用户点餐拦截器
  */
-@Component // 声明为Spring组件，由容器管理
+@Component
 public class StaffOrderInterceptor implements HandlerInterceptor {
-    /**
-     * 用户点餐前加入拦截器，判断当前时间是否在九点之后
-     */
+
+    @Autowired
+    private TimeConfigService timeConfigService;
+
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        // 获取当前时刻
-        String time = DateUtil.format(DateUtil.date(), "HH:mm:ss");
-        // 计算当前时间大小（转换为秒数）
-        int hour = Integer.parseInt(time.substring(0,2));
-        int min = Integer.parseInt(time.substring(3,5));
-        int sec = Integer.parseInt(time.substring(6,8));
-        int currentSeconds = hour * 3600 + min * 60 + sec;
+        // 获取当前时间配置
+        TimeConfig config = timeConfigService.getCurrentConfig();
+        String deadline = config.getOrderDeadline(); // 从数据库获取截止时间
 
-        // 9点对应的秒数（9*3600=32400）
-        final int NINE_O_CLOCK = 32400;
+        // 解析截止时间为秒数
+        String[] deadlineParts = deadline.split(":");
+        int deadlineHour = Integer.parseInt(deadlineParts[0]);
+        int deadlineMin = Integer.parseInt(deadlineParts[1]);
+        int deadlineSec = Integer.parseInt(deadlineParts[2]);
+        int deadlineSeconds = deadlineHour * 3600 + deadlineMin * 60 + deadlineSec;
 
-        // 当前时间大于9点整，拦截请求
-        if (currentSeconds > NINE_O_CLOCK) {
-            ResponseUtil.out(response, R.fail("当前时间不允许点餐"));
+        // 计算当前时间的秒数
+        String currentTime = DateUtil.format(DateUtil.date(), "HH:mm:ss");
+        String[] currentParts = currentTime.split(":");
+        int currentHour = Integer.parseInt(currentParts[0]);
+        int currentMin = Integer.parseInt(currentParts[1]);
+        int currentSec = Integer.parseInt(currentParts[2]);
+        int currentSeconds = currentHour * 3600 + currentMin * 60 + currentSec;
+
+        // 比较当前时间与截止时间
+        if (currentSeconds > deadlineSeconds) {
+            ResponseUtil.out(response, R.fail("当前时间不允许点餐（截止时间：" + deadline + "）"));
             return false;
-        } else {  // 当前时间在9点前，放行请求
-            return true;
         }
+        return true;
     }
 }
