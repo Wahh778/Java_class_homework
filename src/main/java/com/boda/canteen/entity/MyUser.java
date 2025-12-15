@@ -1,5 +1,6 @@
 package com.boda.canteen.entity;
 
+import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
@@ -11,7 +12,7 @@ public class MyUser implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @TableId // 无需指定value，关闭驼峰后直接映射数据库的userId字段
+    @TableId(type = IdType.AUTO)
     private Long userId;
 
     private String name;
