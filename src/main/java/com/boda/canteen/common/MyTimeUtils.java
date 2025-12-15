@@ -17,8 +17,7 @@ public class MyTimeUtils {
         // 获取当前时间是这周第几天
         int thisDayOfWeek = DateUtil.thisDayOfWeek();
         Date weekOfBeginTime;
-        if (thisDayOfWeek == 1) {   // 是否是周日
-            // 偏移到七天前即本周周一并获取这一天的开始位置
+        if (thisDayOfWeek == 1) {
             weekOfBeginTime = DateUtil.beginOfDay(DateUtil.offsetDay(DateUtil.date(),(DateUtil.thisDayOfWeek()-7)));
         }else{
             weekOfBeginTime = DateUtil.beginOfDay(DateUtil.offsetDay(DateUtil.date(),(2 - DateUtil.thisDayOfWeek())));

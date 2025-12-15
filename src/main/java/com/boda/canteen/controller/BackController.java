@@ -126,7 +126,7 @@ public class BackController {
     }
 
     /**
-     * 跳转本周菜单页面
+     * 跳转今日菜单页面
      */
     @PreAuthorize("hasRole('manager')")
     @GetMapping("/back/toMenu")
@@ -148,7 +148,7 @@ public class BackController {
     }
 
     /**
-     * 跳转下周菜单页面
+     * 跳转明日菜单页面
      */
     @PreAuthorize("hasRole('manager')")
     @GetMapping("/back/toNextMenu")

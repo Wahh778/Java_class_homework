@@ -12,24 +12,21 @@
             <div class="layui-form-item">
                 <label class="layui-form-label">旧密码</label>
                 <div class="layui-input-block">
-                    <input type="text" autocomplete="off" placeholder="请输入旧密码" id="oldPwd"
-                           class="layui-input">
-                    <input type="hidden" id="oldHidPwd" th:value="${session.currUser.password}">
+                    <input type="password" autocomplete="off" placeholder="请输入旧密码" id="oldPwd" class="layui-input">
+                    <!-- 移除明文存储的旧密码隐藏域，避免安全风险 -->
                 </div>
             </div>
             <div class="layui-form-item">
                 <label class="layui-form-label">新密码</label>
                 <div class="layui-input-block">
-                    <input type="text" autocomplete="off" placeholder="请输入新密码" id="newPwd"
-                           class="layui-input">
+                    <input type="password" autocomplete="off" placeholder="请输入新密码" id="newPwd" class="layui-input">
                 </div>
             </div>
         </div>
     </div>
     <div class="bottom">
         <div class="button-container">
-            <button type="submit" class="pear-btn pear-btn-primary pear-btn-sm" lay-submit=""
-                    lay-filter="user-save">
+            <button type="submit" class="pear-btn pear-btn-primary pear-btn-sm" lay-submit="" lay-filter="user-save">
                 <i class="layui-icon layui-icon-ok"></i>
                 提交
             </button>
@@ -47,23 +44,55 @@
         let form = layui.form;
         let $ = layui.jquery;
 
+        // 旧密码失焦验证（调用后端接口）
         $("#oldPwd").blur(function (){
-            var oldPwd = $("#oldPwd").val();
-            var orgPwd = $("#oldHidPwd").val();
-            if (oldPwd !== orgPwd){
-                layer.msg("旧密码不一致", {
-                    icon: 2,
-                    time: 1000
-                });
-                $(this).val("");
-            }
+            var oldPwd = $(this).val();
+            if (!oldPwd) return; // 空值不校验
+
+            $.ajax({
+                url: '/user/checkOldPwd',
+                type: 'post',
+                data: {oldPassword: oldPwd},
+                dataType: 'json',
+                success: function(result) {
+                    if (result.code === 200) {
+                        if (!result.data) { // 后端返回不匹配
+                            layer.msg("旧密码不正确", {icon: 2, time: 1000});
+                            $("#oldPwd").val(""); // 清空输入
+                        }
+                    } else {
+                        layer.msg("验证失败，请重试", {icon: 2, time: 1000});
+                    }
+                },
+                error: function() {
+                    layer.msg("网络错误，请稍后再试", {icon: 2, time: 1000});
+                }
+            });
         });
 
+        // 提交修改密码
         form.on('submit(user-save)', function() {
-            var pwd = $("#newPwd").val();
+            var newPwd = $("#newPwd").val();
+            var oldPwd = $("#oldPwd").val();
+
+            // 前端简单校验
+            if (!oldPwd) {
+                layer.msg("请输入旧密码", {icon: 2, time: 1000});
+                return false;
+            }
+            if (!newPwd) {
+                layer.msg("请输入新密码", {icon: 2, time: 1000});
+                return false;
+            }
+            if (oldPwd === newPwd) {
+                layer.msg("新密码不能与旧密码相同", {icon: 2, time: 1000});
+                return false;
+            }
+
+            // 调用后端修改密码接口
             $.ajax({
                 url: '/user/updatePwd',
-                data: {"password": pwd},
+                data: {"password": newPwd},
                 dataType: 'json',
                 type: 'post',
                 success: function(result) {
@@ -72,23 +101,20 @@
                             icon: 1,
                             time: 1000
                         }, function() {
-                            parent.layer.close(parent.layer.getFrameIndex(window
-                                .name)); //关闭当前页
+                            parent.layer.close(parent.layer.getFrameIndex(window.name)); // 关闭当前页
                             parent.layui.table.reload("user-table");
                         });
                     } else {
-                        layer.msg(result.msg, {
-                            icon: 2,
-                            time: 1000
-                        });
+                        layer.msg(result.msg, {icon: 2, time: 1000});
                     }
+                },
+                error: function() {
+                    layer.msg("修改失败，请重试", {icon: 2, time: 1000});
                 }
-            })
+            });
             return false;
         });
     })
-</script>
-<script>
 </script>
 </body>
 </html>
