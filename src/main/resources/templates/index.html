@@ -101,13 +101,13 @@
 				var $ = layui.jquery;
 				var admin = layui.admin;
 				var popup = layui.popup;
-				
+
 				admin.setConfigType("yml");
 				admin.setConfigPath("/config/pear.config.yml");
-				
+
 				admin.render();
-				
-				// 登出逻辑 
+
+				// 登出逻辑
 				admin.logout(function(){
 					$.ajax({
 						url: "/login/logout",
@@ -130,6 +130,6 @@
 
 				})
 			})
-		</script>		
+		</script>
 	</body>
 </html>

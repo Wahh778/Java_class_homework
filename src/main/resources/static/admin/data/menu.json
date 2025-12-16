@@ -91,5 +91,13 @@
 		"icon": "pear-icon pear-icon-data-view",
 		"type": 1,
 		"href": "/back/toSale"
+	},
+	{
+		"id": 6,
+		"title": "时间配置",
+		"icon": "layui-icon layui-icon-clock",
+		"type": 1,
+		"openType": "_iframe",
+		"href": "/back/toTimeConfig"
 	}
 ]

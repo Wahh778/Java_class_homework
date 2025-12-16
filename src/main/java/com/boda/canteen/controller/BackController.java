@@ -232,4 +232,12 @@ public class BackController {
         request.getSession().setAttribute("month", month);
         return "sale/details";
     }
+    /**
+     * 跳转时间配置页面（仅经理可访问）
+     */
+    @PreAuthorize("hasRole('manager')")
+    @GetMapping("/back/toTimeConfig")
+    public String toTimeConfig() {
+        return "system/timeConfig"; // 对应新增的时间配置页面
+    }
 }

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <title>时间配置</title>
+    <link rel="stylesheet" th:href="@{/component/pear/css/pear.css}" />
+</head>
+<body class="pear-container">
+<div class="layui-card">
+    <div class="layui-card-header">
+        系统时间配置
+    </div>
+    <div class="layui-card-body">
+        <form class="layui-form" lay-filter="timeConfigForm">
+            <div class="layui-form-item">
+                <label class="layui-form-label">订餐截止时间</label>
+                <div class="layui-input-inline">
+                    <input type="time" name="orderDeadline" class="layui-input" required>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">配餐开始时间</label>
+                <div class="layui-input-inline">
+                    <input type="time" name="mealStartTime" class="layui-input" required>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <button class="pear-btn pear-btn-primary" lay-submit lay-filter="saveTimeConfig">
+                    保存配置
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script th:src="@{/component/layui/layui.js}"></script>
+<script>
+    layui.use(['form', 'jquery', 'popup'], function() {
+        var form = layui.form;
+        var $ = layui.jquery;
+        var popup = layui.popup;
+
+        // 页面加载时获取当前配置
+        function loadCurrentConfig() {
+            $.get("/timeConfig/current", function(res) {
+                if (res.code === 200) {
+                    var config = res.data;
+                    // 填充表单（字段名与实体类保持一致）
+                    form.val("timeConfigForm", {
+                        "orderDeadline": config.orderDeadline,
+                        "mealStartTime": config.mealStartTime
+                    });
+                } else {
+                    popup.failure("加载配置失败：" + res.msg);
+                }
+            });
+        }
+
+        // 保存配置
+        form.on("submit(saveTimeConfig)", function(data) {
+            $.ajax({
+                url: "/timeConfig/update",
+                type: "put",
+                contentType: "application/json",
+                data: JSON.stringify(data.field),
+                success: function(res) {
+                    if (res.code === 200) {
+                        popup.success("配置更新成功");
+                    } else {
+                        popup.failure("更新失败：" + res.msg);
+                    }
+                }
+            });
+            return false;
+        });
+
+        // 初始化加载配置
+        loadCurrentConfig();
+    });
+</script>
+</body>
+</html>
