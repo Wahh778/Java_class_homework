@@ -1,81 +1,351 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="zh-CN">
 <head>
-    <meta charset="utf-8">
-    <title>时间配置</title>
-    <link rel="stylesheet" th:href="@{/component/pear/css/pear.css}" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>食堂时间配置管理</title>
+    <!-- 引入Layui核心CSS -->
+    <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.8.18/css/layui.css">
+    <!-- 引入jQuery（Layui内置jQuery，也可单独引入） -->
+    <script src="https://cdn.staticfile.org/jquery/3.6.4/jquery.min.js"></script>
+    <!-- 引入Layui核心JS -->
+    <script src="https://cdn.staticfile.org/layui/2.8.18/layui.js"></script>
+    <style>
+        /* 自定义样式 */
+        .config-container {
+            width: 90%;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .config-title {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .config-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px dashed #f0f0f0;
+        }
+        .config-label {
+            font-size: 14px;
+            color: #666;
+            width: 40%;
+        }
+        .config-value {
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+            width: 60%;
+            text-align: right;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px 0;
+            color: #999;
+        }
+        .edit-btn-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .layui-form-item {
+            margin-bottom: 15px;
+        }
+        .layui-form-label {
+            width: 120px;
+        }
+        .layui-input-block {
+            margin-left: 150px;
+        }
+        /* 自定义时间输入框样式 */
+        .time-input {
+            font-family: monospace;
+        }
+    </style>
 </head>
-<body class="pear-container">
-<div class="layui-card">
-    <div class="layui-card-header">
-        系统时间配置
+<body>
+<div class="config-container">
+    <div class="config-title">食堂时间配置信息</div>
+    <!-- 加载中提示 -->
+    <div class="loading" id="loading">
+        <i class="layui-icon layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop" style="font-size: 24px;"></i>
+        <p style="margin-top: 10px;">正在加载配置信息...</p>
     </div>
-    <div class="layui-card-body">
-        <form class="layui-form" lay-filter="timeConfigForm">
-            <div class="layui-form-item">
-                <label class="layui-form-label">订餐截止时间</label>
-                <div class="layui-input-inline">
-                    <input type="time" name="orderDeadline" class="layui-input" required>
-                </div>
-            </div>
-            <div class="layui-form-item">
-                <label class="layui-form-label">配餐开始时间</label>
-                <div class="layui-input-inline">
-                    <input type="time" name="mealStartTime" class="layui-input" required>
-                </div>
-            </div>
-            <div class="layui-form-item">
-                <button class="pear-btn pear-btn-primary" lay-submit lay-filter="saveTimeConfig">
-                    保存配置
-                </button>
-            </div>
-        </form>
+    <!-- 配置信息展示区域（初始隐藏） -->
+    <div id="config-content" style="display: none;">
+        <div class="config-item">
+            <div class="config-label">订餐截止时间：</div>
+            <div class="config-value" id="order-deadline"></div>
+        </div>
+        <div class="config-item">
+            <div class="config-label">配餐开始时间：</div>
+            <div class="config-value" id="meal-start-time"></div>
+        </div>
+        <div class="config-item">
+            <div class="config-label">最后更新时间：</div>
+            <div class="config-value" id="update-time"></div>
+        </div>
+        <!-- 编辑按钮（仅经理可见，可根据实际权限控制） -->
+        <div class="edit-btn-container">
+            <button class="layui-btn layui-btn-normal" id="edit-btn">
+                <i class="layui-icon layui-icon-edit"></i> 修改时间配置
+            </button>
+        </div>
+    </div>
+    <!-- 加载失败提示（初始隐藏） -->
+    <div class="loading" id="error" style="display: none;">
+        <i class="layui-icon layui-icon-face-cry" style="font-size: 24px; color: #ff5722;"></i>
+        <p style="margin-top: 10px; color: #ff5722;" id="error-msg">加载配置信息失败</p>
+        <button class="layui-btn layui-btn-sm layui-btn-normal" id="reload-btn" style="margin-top: 10px;">重新加载</button>
     </div>
 </div>
 
-<script th:src="@{/component/layui/layui.js}"></script>
+<!-- 编辑时间配置的弹窗（初始隐藏） -->
+<div id="edit-modal" style="display: none; padding: 20px;">
+    <form class="layui-form" lay-filter="time-config-form" id="time-config-form">
+        <input type="hidden" id="config-id" name="id">
+        <div class="layui-form-item">
+            <label class="layui-form-label">订餐截止时间</label>
+            <div class="layui-input-block">
+                <!-- 改为普通输入框，强制HH:mm:ss格式 -->
+                <input type="text" name="orderDeadline" id="edit-order-deadline"
+                       lay-verify="required|timeFormat" placeholder="请输入HH:mm:ss格式时间"
+                       class="layui-input time-input" maxlength="8">
+                <div class="layui-form-mid layui-word-aux">格式要求：HH:mm:ss（例如：09:00:00）</div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">配餐开始时间</label>
+            <div class="layui-input-block">
+                <!-- 改为普通输入框，强制HH:mm:ss格式 -->
+                <input type="text" name="mealStartTime" id="edit-meal-start-time"
+                       lay-verify="required|timeFormat" placeholder="请输入HH:mm:ss格式时间"
+                       class="layui-input time-input" maxlength="8">
+                <div class="layui-form-mid layui-word-aux">格式要求：HH:mm:ss（例如：11:30:00）</div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <button class="layui-btn" lay-submit lay-filter="submit-config">提交修改</button>
+                <button type="reset" class="layui-btn layui-btn-primary">重置</button>
+            </div>
+        </div>
+    </form>
+</div>
+
 <script>
-    layui.use(['form', 'jquery', 'popup'], function() {
+    // 初始化Layui模块
+    layui.use(['layer', 'form'], function() {
+        var layer = layui.layer;
         var form = layui.form;
         var $ = layui.jquery;
-        var popup = layui.popup;
 
-        // 页面加载时获取当前配置
-        function loadCurrentConfig() {
-            $.get("/timeConfig/current", function(res) {
-                if (res.code === 200) {
-                    var config = res.data;
-                    // 填充表单（字段名与实体类保持一致）
-                    form.val("timeConfigForm", {
-                        "orderDeadline": config.orderDeadline,
-                        "mealStartTime": config.mealStartTime
-                    });
-                } else {
-                    popup.failure("加载配置失败：" + res.msg);
+        // 全局存储当前配置数据
+        var currentConfig = null;
+
+        // 格式化时间（适配后端返回的 "2025-12-14 22:20:21" 格式）
+        function formatTime(timeStr) {
+            if (!timeStr) return '未更新';
+            // 替换空格为T，兼容Date构造函数
+            var date = new Date(timeStr.replace(/\s+/g, 'T'));
+            if (isNaN(date.getTime())) {
+                return timeStr; // 格式化失败则显示原始值
+            }
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
+        // 补全时间格式为HH:mm:ss（例如：9:5:3 → 09:05:03）
+        function completeTimeFormat(timeStr) {
+            if (!timeStr) return '';
+            // 拆分时分秒
+            var parts = timeStr.split(':');
+            // 补零处理
+            var hour = parts[0] ? parts[0].padStart(2, '0') : '00';
+            var minute = parts[1] ? parts[1].padStart(2, '0') : '00';
+            var second = parts[2] ? parts[2].padStart(2, '0') : '00';
+            return `${hour}:${minute}:${second}`;
+        }
+
+        // 时间格式校验（严格校验HH:mm:ss）
+        form.verify({
+            timeFormat: function(value) {
+                // 严格匹配HH:mm:ss格式（24小时制，时分秒均为两位）
+                var reg = /^([01]\d|2[0-3]):[0-5]\d:[0-5]\d$/;
+                if (!reg.test(value)) {
+                    return '请输入正确的时间格式（HH:mm:ss），例如：09:00:00';
+                }
+            }
+        });
+
+        // 给时间输入框添加实时格式化处理
+        $(document).on('input', '.time-input', function() {
+            var val = $(this).val().replace(/[^0-9:]/g, ''); // 只保留数字和冒号
+            // 自动添加冒号分隔
+            if (val.length === 2 && val.indexOf(':') === -1) {
+                val += ':';
+            } else if (val.length === 5 && val.lastIndexOf(':') === 2) {
+                val += ':';
+            }
+            // 限制最大长度8位（HH:mm:ss）
+            if (val.length > 8) {
+                val = val.substring(0, 8);
+            }
+            $(this).val(val);
+        });
+
+        // 请求后端接口获取时间配置
+        function getTimeConfig() {
+            // 显示加载中，隐藏其他区域
+            $('#loading').show();
+            $('#config-content').hide();
+            $('#error').hide();
+
+            // 发送AJAX请求
+            $.ajax({
+                url: '/timeConfig/current', // 后端接口地址
+                type: 'GET',
+                dataType: 'json',
+                timeout: 5000, // 超时时间5秒
+                success: function(res) {
+                    $('#loading').hide();
+                    console.log("接口返回数据：", res); // 调试用，可保留
+
+                    // 关键修复：判断code为200（匹配后端返回的200）
+                    if (res && res.code === 200 && res.data) {
+                        currentConfig = res.data;
+
+                        // 填充数据到展示区域（确保格式为HH:mm:ss）
+                        $('#order-deadline').text(completeTimeFormat(currentConfig.orderDeadline) || '未设置');
+                        $('#meal-start-time').text(completeTimeFormat(currentConfig.mealStartTime) || '未设置');
+                        $('#update-time').text(formatTime(currentConfig.updateTime));
+
+                        // 显示配置内容
+                        $('#config-content').show();
+                    } else {
+                        // 接口返回失败
+                        $('#error-msg').text(res?.msg || '加载配置信息失败（无有效数据）');
+                        $('#error').show();
+                    }
+                },
+                error: function(xhr, status, error) {
+                    $('#loading').hide();
+                    // 处理请求失败
+                    var errorMsg = '';
+                    if (status === 'timeout') {
+                        errorMsg = '请求超时，请检查网络';
+                    } else if (xhr.status === 404) {
+                        errorMsg = '接口地址不存在';
+                    } else if (xhr.status === 403) {
+                        errorMsg = '无权限访问配置信息';
+                    } else {
+                        errorMsg = '加载失败：' + (error || '未知错误');
+                    }
+                    $('#error-msg').text(errorMsg);
+                    $('#error').show();
+                    // 打印错误日志
+                    console.error('获取时间配置失败：', error, xhr);
                 }
             });
         }
 
-        // 保存配置
-        form.on("submit(saveTimeConfig)", function(data) {
+        // 打开编辑弹窗
+        $('#edit-btn').click(function() {
+            if (!currentConfig) {
+                layer.msg('暂无配置数据可编辑', {icon: 2});
+                return;
+            }
+
+            // 填充数据到编辑表单（确保格式为HH:mm:ss）
+            $('#config-id').val(currentConfig.id || '');
+            $('#edit-order-deadline').val(completeTimeFormat(currentConfig.orderDeadline) || '');
+            $('#edit-meal-start-time').val(completeTimeFormat(currentConfig.mealStartTime) || '');
+
+            // 打开弹窗
+            layer.open({
+                type: 1,
+                title: '修改时间配置',
+                area: ['550px', '350px'],
+                content: $('#edit-modal'),
+                shade: 0.3,
+                fixed: true,
+                resize: false
+            });
+        });
+
+        // 提交修改表单
+        form.on('submit(submit-config)', function(data) {
+            // 最终补全时间格式
+            var orderDeadline = completeTimeFormat(data.field.orderDeadline);
+            var mealStartTime = completeTimeFormat(data.field.mealStartTime);
+
+            // 组装提交数据
+            var submitData = {
+                id: $('#config-id').val(),
+                orderDeadline: orderDeadline,
+                mealStartTime: mealStartTime
+            };
+
+            // 发送更新请求
             $.ajax({
-                url: "/timeConfig/update",
-                type: "put",
-                contentType: "application/json",
-                data: JSON.stringify(data.field),
+                url: '/timeConfig/update',
+                type: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify(submitData),
+                dataType: 'json',
+                timeout: 5000,
                 success: function(res) {
-                    if (res.code === 200) {
-                        popup.success("配置更新成功");
+                    if (res && res.code === 200) {
+                        layer.msg(res.msg || '修改成功', {icon: 1});
+                        // 关闭弹窗
+                        layer.closeAll('page');
+                        // 重新加载数据
+                        getTimeConfig();
                     } else {
-                        popup.failure("更新失败：" + res.msg);
+                        layer.msg(res?.msg || '修改失败', {icon: 2});
                     }
+                },
+                error: function(xhr, status, error) {
+                    if (xhr.status === 403) {
+                        layer.msg('无修改权限（仅经理可操作）', {icon: 5});
+                    } else if (status === 'timeout') {
+                        layer.msg('请求超时，请重试', {icon: 5});
+                    } else if (xhr.status === 400) {
+                        layer.msg('时间格式错误，请检查输入', {icon: 2});
+                    } else {
+                        layer.msg('修改失败：' + error, {icon: 2});
+                    }
+                    console.error('更新配置失败：', error, xhr);
                 }
             });
+
+            // 阻止表单默认提交
             return false;
         });
 
-        // 初始化加载配置
-        loadCurrentConfig();
+        // 重新加载按钮点击事件
+        $('#reload-btn').click(function() {
+            getTimeConfig();
+        });
+
+        // 页面加载时执行请求
+        getTimeConfig();
     });
 </script>
 </body>
