@@ -10,7 +10,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <meta name="apple-mobile-web-app-title" content="Material Design Lite">
     <meta name="msapplication-TileImage" content="images/touch/ms-touch-icon-144x144-precomposed.png">
-    <meta name="msapplication-TileColor" content="#3372DF">
+    <meta name="msapplication-TileColor" content="#121212">
     <title>用户中心</title>
     <link rel="icon" sizes="192x192" th:href="@{/frontStatic/image/logo.png}">
     <link rel="apple-touch-icon-precomposed" th:href="@{/frontStatic/image/logo.png}">
@@ -28,25 +28,324 @@
     <script type="text/javascript" th:src="@{/frontStatic/js/jquery.raty.js}"></script>
     <script type="text/javascript" th:src="@{/frontStatic/js/front/information.js}"></script>
     <style>
+        /* 基础重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background-color: #f5f5f5;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        /* 按钮样式优化 */
         .templatemo-blue-button {
             background-color: #39ADB4;
             border: none;
             color: white;
+            padding: 8px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
-        .no-border{border: 0 solid transparent !important;}
-        .finish-btn{
-            background-color:#e65b0e !important;
+        .templatemo-blue-button:hover {
+            background-color: #2d8c92;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
-        .font-color{
-            color: #00BBD6; !important;
+        .no-border {
+            border: 0 solid transparent !important;
         }
+        .finish-btn {
+            background-color: #e65b0e !important;
+        }
+        .font-color {
+            color: #00BBD6 !important;
+        }
+
         /* 标签页样式 */
         .tab-content {
             min-height: 500px;
+            padding: 20px;
         }
-        /* 导航链接激活状态 */
+
+        /* ========== 核心修复：顶部全黑通栏始终全屏 ========== */
+        .demo-layout {
+            position: relative;
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 顶部header - 彻底全屏，永不收缩 */
+        .demo-header {
+            background-color: #121212 !important; /* 纯黑底色 */
+            color: #e0e0e0 !important;
+            width: 100% !important; /* 强制全屏宽度 */
+            margin-left: 0 !important; /* 移除左侧边距限制 */
+            left: 0 !important;
+            right: 0 !important;
+            transition: none !important; /* 取消过渡，始终全屏 */
+            z-index: 9998 !important;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+            height: 64px !important;
+            position: fixed !important; /* 固定定位，全屏显示 */
+        }
+        .mdl-layout-title {
+            color: #ffffff !important;
+            padding-left: 260px !important; /* 初始避开侧边栏宽度 */
+            font-weight: 500;
+            font-size: 18px;
+            transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+        /* 侧边栏收起时，标题左移 */
+        .demo-layout.collapsed .mdl-layout-title {
+            padding-left: 80px !important; /* 适配收起的侧边栏 */
+        }
+        .mdl-layout__header-row {
+            height: 64px !important;
+            align-items: center;
+            width: 100% !important;
+        }
+
+        /* 折叠按钮 - 悬浮优化+顶层 */
+        .sidebar-toggle {
+            position: absolute;
+            top: 17px;
+            right: -15px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #212121;
+            color: #39ADB4;
+            text-align: center;
+            line-height: 30px;
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+            z-index: 10000 !important;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-toggle:hover {
+            background-color: #39ADB4;
+            color: #ffffff;
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(57, 173, 180, 0.4);
+        }
+
+        /* 侧导航容器 - 置顶覆盖header左侧，视觉一体 */
+        .demo-drawer {
+            position: fixed !important;
+            top: 0 !important; /* 顶部对齐，覆盖header左侧 */
+            bottom: 0;
+            left: 0;
+            background-color: #121212 !important;
+            border-right: 1px solid rgba(255,255,255,0.08) !important;
+            border-radius: 0 !important; /* 取消圆角，无缝衔接 */
+            box-shadow: 2px 0 15px rgba(0,0,0,0.5) !important;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            overflow: hidden;
+            width: 240px !important;
+            z-index: 9999 !important; /* 高于header，覆盖左侧 */
+            padding-top: 64px; /* 与header高度一致，顶部留白 */
+        }
+        .demo-drawer.collapsed {
+            width: 60px !important;
+        }
+
+        /* Logo容器 - 垂直居中+全黑背景 */
+        .demo-drawer-header {
+            padding: 25px 0 !important;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background-color: #121212 !important; /* 与侧边栏同色，无缝 */
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            margin-top: 0 !important; /* 取消之前的margin-top */
+        }
+        .logo-img {
+            width: 80px;
+            height: auto;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+        }
+        .demo-drawer.collapsed .logo-img {
+            width: 40px;
+        }
+
+        /* 导航列表 - 间距优化+交互增强 */
+        .demo-navigation {
+            background-color: #121212 !important;
+            padding: 10px 0;
+            height: calc(100% - 110px);
+            overflow-y: auto;
+        }
+        .demo-navigation::-webkit-scrollbar {
+            width: 4px;
+        }
+        .demo-navigation::-webkit-scrollbar-thumb {
+            background-color: rgba(255,255,255,0.2);
+            border-radius: 2px;
+        }
+        .demo-navigation .mdl-navigation__link {
+            padding: 12px 20px !important;
+            border-radius: 8px;
+            margin: 4px 10px;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            color: #cccccc !important;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+        }
+        .demo-navigation .mdl-navigation__link i {
+            margin-right: 12px !important;
+            font-size: 20px;
+            color: #999999;
+        }
+        /* 导航激活态 */
         .demo-navigation .mdl-navigation__link.active {
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: rgba(57, 173, 180, 0.2) !important;
+            border-left: 3px solid #39ADB4;
+            color: #ffffff !important;
+        }
+        .demo-navigation .mdl-navigation__link.active i {
+            color: #39ADB4;
+        }
+        /* 导航hover态 */
+        .demo-navigation .mdl-navigation__link:hover {
+            background-color: rgba(255,255,255,0.08) !important;
+            color: #ffffff !important;
+            transform: translateX(3px);
+        }
+        .demo-navigation .mdl-navigation__link:hover i {
+            color: #39ADB4;
+        }
+
+        /* 折叠状态导航样式 */
+        .demo-drawer.collapsed .mdl-navigation__link span {
+            display: none;
+        }
+        .demo-drawer.collapsed .mdl-navigation__link {
+            text-align: center;
+            padding: 12px 0 !important;
+            justify-content: center;
+        }
+        .demo-drawer.collapsed .mdl-navigation__link i {
+            margin: 0 !important;
+            color: #cccccc !important;
+        }
+
+        /* 悬浮提示 - 优化样式 */
+        .mdl-navigation__link .tooltip {
+            position: absolute;
+            left: 70px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: #212121;
+            color: #ffffff;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            display: none;
+            z-index: 10001 !important;
+            white-space: nowrap;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .mdl-navigation__link .tooltip::after {
+            content: '';
+            position: absolute;
+            left: -5px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-width: 5px 5px 5px 0;
+            border-style: solid;
+            border-color: transparent #212121 transparent transparent;
+        }
+        .demo-drawer.collapsed .mdl-navigation__link:hover .tooltip {
+            display: block;
+        }
+
+        /* 内容区域 - 适配+优化 */
+        .mdl-layout__content {
+            margin-left: 240px !important;
+            margin-top: 64px !important; /* 避开header高度 */
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            padding: 20px;
+            background-color: #f5f5f5;
+            height: calc(100vh - 64px);
+            overflow-y: auto;
+        }
+        .demo-layout.collapsed .mdl-layout__content {
+            margin-left: 60px !important;
+        }
+        .demo-content {
+            padding: 0;
+        }
+        .demo-charts {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* 表格样式优化 */
+        .table {
+            margin-bottom: 15px;
+        }
+        .table th {
+            font-weight: 500;
+            color: #333;
+            border-bottom: 2px solid #eee;
+        }
+        .table td {
+            color: #666;
+            border-bottom: 1px solid #eee;
+        }
+        h3 {
+            color: #222;
+            font-weight: 500;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+
+        /* 模态框样式优化 */
+        .modal-content {
+            border-radius: 8px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            border: none;
+        }
+        .modal-header {
+            background-color: #121212;
+            color: #ffffff;
+            border-radius: 8px 8px 0 0;
+            border-bottom: none;
+        }
+        .modal-header .close {
+            color: #ffffff;
+            opacity: 0.8;
+        }
+        .modal-header .close:hover {
+            opacity: 1;
+        }
+        .modal-title {
+            font-weight: 500;
+        }
+        .form-control {
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            padding: 8px 12px;
+        }
+        .form-control:focus {
+            border-color: #39ADB4;
+            box-shadow: 0 0 0 3px rgba(57, 173, 180, 0.1);
         }
     </style>
 </head>
@@ -65,7 +364,7 @@
                     <div class="form-group">
                         <label for="oldPsw" class="col-sm-2 control-label">旧密码</label>
                         <div class="col-sm-9">
-                            <input type="password" class="form-control" name="oldPsw" id="oldPsw">
+                            <input type="password" class="form-control" name="oldPsw" id="oldPsw" placeholder="请输入旧密码">
                         </div>
                     </div>
                     <div class="form-group" style="display: none" id="oldPswError">
@@ -77,7 +376,7 @@
                     <div class="form-group">
                         <label for="newPsw" class="col-sm-2 control-label">新密码</label>
                         <div class="col-sm-9">
-                            <input type="password" class="form-control" name="newPsw" id="newPsw">
+                            <input type="password" class="form-control" name="newPsw" id="newPsw" placeholder="请输入新密码">
                         </div>
                     </div>
                 </form>
@@ -99,30 +398,44 @@
             </div>
         </div>
     </header>
+
+    <!-- 侧导航栏（全黑+无缝衔接） -->
     <div class="demo-drawer mdl-layout__drawer mdl-color--blue-grey-900 mdl-color-text--blue-grey-50">
+        <!-- 折叠/展开按钮 -->
+        <div class="sidebar-toggle" id="sidebarToggle">
+            <i class="material-icons">chevron_left</i>
+        </div>
+
+        <!-- Logo容器 - 全黑背景 -->
         <header class="demo-drawer-header">
-            <div class="demo-avatar-dropdown">
-                <h1>Canteen</h1>
-                <div class="mdl-layout-spacer">
-                </div>
-            </div>
+            <img th:src="@{/admin/images/logo1.png}" class="logo-img" alt="Canteen Logo">
         </header>
-        <!-- 修复1：给导航添加 .nav-tabs 类（Bootstrap 必须） -->
+
+        <!-- 导航列表 -->
         <nav class="demo-navigation mdl-navigation mdl-color--blue-grey-800 nav-tabs">
             <a class="mdl-navigation__link" th:href="@{/front/toMain}">
-                <i class="mdl-color-text--blue-grey-400 material-icons" role="presentation">home</i>主页
+                <i class="mdl-color-text--blue-grey-400 material-icons" role="presentation">home</i>
+                <span>主页</span>
+                <span class="tooltip">主页</span>
             </a>
             <a class="mdl-navigation__link active" href="#information" aria-controls="information" role="tab" data-toggle="tab">
-                <i class="mdl-color-text--blue-grey-400 material-icons" role="presentation">inbox</i>个人信息
+                <i class="mdl-color-text--blue-grey-400 material-icons" role="presentation">inbox</i>
+                <span>个人信息</span>
+                <span class="tooltip">个人信息</span>
             </a>
             <a class="mdl-navigation__link" href="#todayOrder" aria-controls="todayOrder" role="tab" data-toggle="tab">
-                <i class="mdl-color-text--blue-grey-400 material-icons" role="presentation">forum</i>今日订单
+                <i class="mdl-color-text--blue-grey-400 material-icons" role="presentation">forum</i>
+                <span>今日订单</span>
+                <span class="tooltip">今日订单</span>
             </a>
             <a class="mdl-navigation__link" href="#monthOrder" aria-controls="monthOrder" role="tab" data-toggle="tab">
-                <i class="mdl-color-text--blue-grey-400 material-icons" role="presentation">forum</i>月度订单
+                <i class="mdl-color-text--blue-grey-400 material-icons" role="presentation">forum</i>
+                <span>月度订单</span>
+                <span class="tooltip">月度订单</span>
             </a>
         </nav>
     </div>
+
     <main class="mdl-layout__content mdl-color--grey-100">
         <div class="mdl-grid demo-content">
             <div class="demo-charts mdl-color--white mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-grid">
@@ -133,8 +446,7 @@
                         <h3>个人信息</h3>
                         <table class="table" cellpadding="6" cellspacing="1">
                             <thead>
-                            <th style="border: 0 solid transparent">
-                            </th>
+                            <th style="border: 0 solid transparent"></th>
                             </thead>
                             <tbody>
                             <tr>
@@ -174,59 +486,36 @@
                         <h3>今日订单详情</h3>
                         <div th:each="order:${session.orderList}" class="demo-charts mdl-color--white mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-grid">
                             <div class="tab-content col-lg-12">
-                                <table class="table " cellpadding="6" cellspacing="1" >
+                                <table class="table " cellpadding="6" cellspacing="1">
                                     <tbody>
-                                    <td class="no-border col-lg-9" th:text="'订单号：' + ${order.orderId} + '&nbsp;&nbsp;&nbsp;订单日期:' + ${#dates.format(order.orderTime,'yyyy-MM-dd HH:mm:ss')} + '&nbsp;&nbsp;&nbsp;电话：' + ${order.telephone}">
-                                    </td>
-                                    <td  class="no-border col-lg-3" th:text="'实付款:' + ${order.orderPrice}">
-                                    </td>
+                                    <td class="no-border col-lg-9" th:text="'订单号：' + ${order.orderId} + '&nbsp;&nbsp;&nbsp;订单日期:' + ${#dates.format(order.orderTime,'yyyy-MM-dd HH:mm:ss')} + '&nbsp;&nbsp;&nbsp;电话：' + ${order.telephone}"></td>
+                                    <td class="no-border col-lg-3" th:text="'实付款:' + ${order.orderPrice}"></td>
                                     </tbody>
                                 </table>
                                 <table class="table " cellpadding="6" cellspacing="1">
                                     <tbody>
                                     <tr>
-                                        <td class="col-lg-1">
-                                            菜品名称
-                                        </td>
-                                        <td class="col-lg-2">
-                                            计量单位
-                                        </td>
-                                        <td class="col-lg-1">
-                                            价格
-                                        </td>
-                                        <td class="col-lg-1">
-                                            数量
-                                        </td>
-                                        <td class="col-lg-2">
-                                            总金额
-                                        </td>
+                                        <td class="col-lg-1">菜品名称</td>
+                                        <td class="col-lg-2">计量单位</td>
+                                        <td class="col-lg-1">价格</td>
+                                        <td class="col-lg-1">数量</td>
+                                        <td class="col-lg-2">总金额</td>
                                     </tr>
                                     </tbody>
                                 </table>
                                 <table class="table table-bordered" cellpadding="6" cellspacing="1" th:each="bo:${session.blanketOrderList}" th:if="${bo.orderId == order.orderId}">
                                     <tbody>
                                     <tr>
-                                        <td class="col-lg-1" th:text="${bo.name}">
-                                            XXX
-                                        </td>
-                                        <td class="col-lg-2" th:text="${bo.unit}">
-                                            XXX
-                                        </td>
-                                        <td class="col-lg-1" th:text="${bo.price}">
-                                            XXX
-                                        </td>
-                                        <td class="col-lg-1" th:text="${bo.weight}">
-                                            XXX
-                                        </td>
-                                        <td class="col-lg-2" th:text="${bo.totalPrice}">
-                                            XXX
-                                        </td>
+                                        <td class="col-lg-1" th:text="${bo.name}">XXX</td>
+                                        <td class="col-lg-2" th:text="${bo.unit}">XXX</td>
+                                        <td class="col-lg-1" th:text="${bo.price}">XXX</td>
+                                        <td class="col-lg-1" th:text="${bo.weight}">XXX</td>
+                                        <td class="col-lg-2" th:text="${bo.totalPrice}">XXX</td>
                                     </tr>
                                     </tbody>
                                 </table>
                             </div>
-                            <div class="mdl-card__actions mdl-card--border">
-                            </div>
+                            <div class="mdl-card__actions mdl-card--border"></div>
                         </div>
                     </div>
 
@@ -235,53 +524,31 @@
                         <h3>月度订单统计</h3>
                         <div class="demo-charts mdl-color--white mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-grid">
                             <div class="tab-content col-lg-12">
-                                <table class="table " cellpadding="6" cellspacing="1" >
+                                <table class="table " cellpadding="6" cellspacing="1">
                                     <tbody>
-                                    <td class="no-border col-lg-9" th:text="'姓名：' + ${session.currUser.name} + '&nbsp;&nbsp;&nbsp;电话:' + ${session.currUser.telephone} + '&nbsp;&nbsp;&nbsp;统计月份：' + ${session.monDate}">
-                                    </td>
-                                    <td  class="no-border col-lg-3" th:text="'月度总消费:' + ${session.monTotalPrice}">
-                                    </td>
+                                    <td class="no-border col-lg-9" th:text="'姓名：' + ${session.currUser.name} + '&nbsp;&nbsp;&nbsp;电话:' + ${session.currUser.telephone} + '&nbsp;&nbsp;&nbsp;统计月份：' + ${session.monDate}"></td>
+                                    <td class="no-border col-lg-3" th:text="'月度总消费:' + ${session.monTotalPrice}"></td>
                                     </tbody>
                                 </table>
                                 <table class="table " cellpadding="6" cellspacing="1">
                                     <tbody>
                                     <tr>
-                                        <td class="col-lg-2">
-                                            下单时间
-                                        </td>
-                                        <td class="col-lg-1">
-                                            菜品名称
-                                        </td>
-                                        <td class="col-lg-2">
-                                            计量单位
-                                        </td>
-                                        <td class="col-lg-1">
-                                            数量
-                                        </td>
-                                        <td class="col-lg-2">
-                                            总金额
-                                        </td>
+                                        <td class="col-lg-2">下单时间</td>
+                                        <td class="col-lg-1">菜品名称</td>
+                                        <td class="col-lg-2">计量单位</td>
+                                        <td class="col-lg-1">数量</td>
+                                        <td class="col-lg-2">总金额</td>
                                     </tr>
                                     </tbody>
                                 </table>
                                 <table class="table table-bordered" cellpadding="6" cellspacing="1" th:each="bo:${session.monBlanketOrderList}">
                                     <tbody>
                                     <tr>
-                                        <td class="col-lg-2" th:text="${#dates.format(bo.createTime, 'yyyy-MM-dd HH:mm:ss')}">
-                                            XXX
-                                        </td>
-                                        <td class="col-lg-1" th:text="${bo.name}">
-                                            XXX
-                                        </td>
-                                        <td class="col-lg-2" th:text="${bo.unit}">
-                                            XXX
-                                        </td>
-                                        <td class="col-lg-1" th:text="${bo.weight}">
-                                            XXX
-                                        </td>
-                                        <td class="col-lg-2" th:text="${bo.totalPrice}">
-                                            XXX
-                                        </td>
+                                        <td class="col-lg-2" th:text="${#dates.format(bo.createTime, 'yyyy-MM-dd HH:mm:ss')}">XXX</td>
+                                        <td class="col-lg-1" th:text="${bo.name}">XXX</td>
+                                        <td class="col-lg-2" th:text="${bo.unit}">XXX</td>
+                                        <td class="col-lg-1" th:text="${bo.weight}">XXX</td>
+                                        <td class="col-lg-2" th:text="${bo.totalPrice}">XXX</td>
                                     </tr>
                                     </tbody>
                                 </table>
@@ -296,19 +563,62 @@
         </div>
     </main>
 </div>
+
 <script type="text/javascript" th:src="@{https://code.getmdl.io/1.3.0/material.min.js}"></script>
 <script>
     $(function() {
-        // 初始化标签页（确保Bootstrap Tab生效）
+        // 1. 初始化标签页
         $('.demo-navigation a[data-toggle="tab"]').tab();
 
-        // 监听标签页切换完成事件
+        // 2. 标签页切换激活态
         $('.demo-navigation a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
-            // 移除所有导航链接的active类
             $('.demo-navigation .mdl-navigation__link').removeClass('active');
-            // 给当前点击的导航添加active类
             $(this).addClass('active');
         })
+
+        // 3. 侧导航栏折叠/展开逻辑
+        const $drawer = $('.demo-drawer');
+        const $layout = $('.demo-layout');
+        const $toggleBtn = $('#sidebarToggle');
+        let isCollapsed = false;
+
+        // 折叠/展开切换
+        $toggleBtn.click(function() {
+            isCollapsed = !isCollapsed;
+            $drawer.toggleClass('collapsed', isCollapsed);
+            $layout.toggleClass('collapsed', isCollapsed);
+
+            // 切换按钮图标
+            const icon = isCollapsed ? 'chevron_right' : 'chevron_left';
+            $(this).html(`<i class="material-icons">${icon}</i>`);
+        });
+
+        // 4. 智能自动折叠（窗口宽度小于768px时）
+        function autoCollapse() {
+            const windowWidth = $(window).width();
+            if (windowWidth < 768 && !isCollapsed) {
+                $toggleBtn.trigger('click');
+            } else if (windowWidth >= 768 && isCollapsed) {
+                $toggleBtn.trigger('click');
+            }
+        }
+
+        // 初始化时执行一次
+        setTimeout(autoCollapse, 100); // 延迟执行，避免布局未加载完成
+        // 窗口大小变化时执行
+        $(window).resize(autoCollapse);
+
+        // 5. 修改密码模态框交互优化
+        $('#changePsw').click(function() {
+            $('#update-Psw').modal('show');
+        });
+
+        // 6. 输入框焦点样式优化
+        $('.form-control').focus(function() {
+            $(this).parent().addClass('has-focus');
+        }).blur(function() {
+            $(this).parent().removeClass('has-focus');
+        });
     })
 </script>
 </body>

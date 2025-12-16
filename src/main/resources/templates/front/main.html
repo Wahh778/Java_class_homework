@@ -5,7 +5,6 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>首页</title>
-<!--    <link rel="stylesheet" th:href="@{/frontStatic/css/main.css}">-->
     <link rel="stylesheet" th:href="@{/frontStatic/css/font-awesome.min.css}">
     <link rel="stylesheet" th:href="@{/frontStatic/css/bootstrap/css/bootstrap.min.css}">
     <link rel="icon" sizes="192x192" th:href="@{/admin/images/logo.png}">
@@ -13,25 +12,44 @@
     <script type="text/javascript" th:src="@{/frontStatic/css/bootstrap/js/bootstrap.min.js}"></script>
     <script type="text/javascript" th:src="@{/frontStatic/js/holder.js}"></script>
     <script type="text/javascript" th:src="@{/frontStatic/js/front/sort.js}"></script>
-    <style>
-        /* 基础重置与全局样式 */
+    <link rel="stylesheet" th:href="@{/layui/css/layui.css}" media="all">
+    <style th:inline="css">
+        /* 基础重置与全局样式 - 新增背景图片图层 */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
         body {
-            background: #0a0a0a;
+            /* 直接用绝对路径，无需 Thymeleaf 解析 */
+            background: #000000 url(/admin/images/bg.jpg) center center fixed;
+            background-size: cover;
             color: #e0e0e0;
             font-family: 'Microsoft Yahei', 'PingFang SC', Arial, sans-serif;
             line-height: 1.5;
+            position: relative;
+            min-height: 100vh; /* Layui 页面最小高度适配 */
+            margin: 0;
+            padding: 0;
+        }
+        /* 全局背景遮罩层 - 增强层次感 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85); /* 黑色半透明遮罩，可调整透明度 */
+            z-index: -1;
         }
         #main.container {
             width: 100% !important;
             max-width: 100% !important;
             padding: 0;
             margin: 0;
-            background: linear-gradient(135deg, #121212 0%, #1a1a1a 100%);
+            /* 主容器透明化，透出背景 */
+            background: transparent;
         }
         a {
             text-decoration: none;
@@ -46,17 +64,19 @@
             clear: both;
         }
 
-        /* 导航栏 - 优化层级与交互 */
+        /* 导航栏 - 增强玻璃拟态透明效果 */
         .bubble-nav {
-            background: rgba(20, 20, 20, 0.95);
-            backdrop-filter: blur(10px);
+            /* 玻璃拟态核心样式 */
+            background: rgba(20, 20, 20, 0.4); /* 降低不透明度，增强透明感 */
+            backdrop-filter: blur(15px); /* 增强模糊效果 */
+            -webkit-backdrop-filter: blur(15px); /* 兼容webkit内核 */
             box-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
             position: sticky;
             top: 0;
             z-index: 999;
             padding: 0 20px;
             width: 100%;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08); /* 更细的边框，增强透明感 */
         }
         .bubble-nav .logo {
             float: left;
@@ -123,14 +143,16 @@
             font-size: 18px !important;
         }
 
-        /* 二级菜单 - 优化定位与样式 */
+        /* 二级菜单 - 增强玻璃透明效果 */
         .bubble-nav .submenu {
             position: absolute;
             top: 100%;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(30, 30, 30, 0.95);
-            backdrop-filter: blur(10px);
+            /* 二级菜单玻璃拟态 */
+            background: rgba(30, 30, 30, 0.5);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
             border-radius: 12px;
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
             padding: 15px 0;
@@ -150,7 +172,7 @@
             transform: translateX(-50%);
             border-width: 0 10px 10px 10px;
             border-style: solid;
-            border-color: transparent transparent rgba(30, 30, 30, 0.95) transparent;
+            border-color: transparent transparent rgba(30, 30, 30, 0.5) transparent;
         }
         .bubble-nav .nav-item:hover .submenu {
             opacity: 1;
@@ -175,13 +197,28 @@
             padding-left: 8px;
         }
 
-        /* 轮播图 - 优化性能与显示 */
+        /* 轮播图 - 优化显示，增加透明遮罩 */
         #mycarousel {
             width: 100%;
             max-width: 100%;
             height: auto;
             overflow: hidden;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            /* 轮播图容器透明 */
+            background: transparent;
+            position: relative;
+        }
+        /* 轮播图底层遮罩，增强与背景融合 */
+        #mycarousel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            z-index: 1;
+            pointer-events: none;
         }
         .carousel-inner > .item {
             transition: 0.8s ease-in-out left;
@@ -192,9 +229,12 @@
             max-height: 450px;
             object-fit: cover;
             filter: brightness(0.85) contrast(1.1);
+            position: relative;
+            z-index: 0;
         }
         .carousel-indicators {
             bottom: 25px;
+            z-index: 2;
         }
         .carousel-indicators li {
             width: 14px;
@@ -217,11 +257,15 @@
             height: 60px;
             top: 50%;
             transform: translateY(-50%);
-            background-color: rgba(0, 0, 0, 0.5);
+            /* 控制按钮玻璃化 */
+            background-color: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             border-radius: 50%;
             opacity: 0;
             transition: all 0.4s ease;
             border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 2;
         }
         #mycarousel:hover .carousel-control {
             opacity: 1;
@@ -233,14 +277,18 @@
         }
         .carousel-caption {
             text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+            z-index: 2;
         }
 
-        /* 分类标签 - 完美居中+自适应 */
+        /* 分类标签 - 玻璃透明效果 + 居中自适应 */
         .category-tabs {
             max-width: 1200px;
             margin: 30px auto;
             padding: 15px 20px;
-            background: rgba(25, 25, 25, 0.8);
+            /* 分类标签玻璃化 */
+            background: rgba(25, 25, 25, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border-radius: 10px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
             border: 1px solid rgba(255, 255, 255, 0.08);
@@ -251,6 +299,7 @@
             justify-content: center;
             flex-wrap: wrap;
             gap: 10px;
+            z-index: 10;
         }
         .category-tabs::before {
             content: '';
@@ -277,6 +326,8 @@
             white-space: nowrap;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            /* 标签项透明背景 */
+            background: transparent;
         }
         .category-tab::after {
             content: '';
@@ -292,7 +343,8 @@
         }
         .category-tab.active {
             color: #ffffff;
-            background: rgba(242, 46, 0, 0.15);
+            /* 激活标签半透明背景 */
+            background: rgba(242, 46, 0, 0.1);
             box-shadow: 0 0 15px rgba(242, 46, 0, 0.2);
             transform: translateY(-2px);
         }
@@ -305,11 +357,13 @@
             transform: translateY(-2px);
         }
 
-        /* 菜品内容 - 核心优化：自适应网格+固定宽高比 */
+        /* 菜品内容 - 自适应网格+玻璃卡片效果 */
         .category-content {
             display: none;
             padding: 0 20px 40px;
             animation: fadeIn 0.6s ease;
+            position: relative;
+            z-index: 5;
         }
         .category-content.active {
             display: block;
@@ -358,7 +412,10 @@
             height: 100%;
         }
         .data-item-li > div {
-            background: linear-gradient(145deg, #1a1a1a 0%, #121212 100%);
+            /* 菜品卡片玻璃拟态 */
+            background: rgba(26, 26, 26, 0.6);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             border-radius: 12px;
             padding: 20px;
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
@@ -384,12 +441,14 @@
         .data-item-li > div:hover {
             transform: translateY(-8px) scale(1.02);
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(242, 46, 0, 0.2);
+            /* 悬停时增强透明度 */
+            background: rgba(26, 26, 26, 0.7);
         }
         .data-item-li > div:hover::before {
             left: 100%;
         }
 
-        /* 菜品图片容器 - 固定宽高比，解决扭曲问题 */
+        /* 菜品图片容器 - 固定宽高比 */
         .to-big {
             position: relative;
             width: 100%;
@@ -399,6 +458,7 @@
             border-radius: 8px;
             overflow: hidden;
             flex-shrink: 0;
+            z-index: 0;
         }
         .to-big img {
             position: absolute;
@@ -419,6 +479,7 @@
         .data-item-li .text-right {
             margin-top: auto;
             padding-top: 10px;
+            z-index: 1;
         }
         .data-item-li p a {
             color: #ffffff;
@@ -479,7 +540,10 @@
                 top: 70px;
                 left: 0;
                 right: 0;
-                background: rgba(20, 20, 20, 0.98);
+                /* 移动端导航玻璃化 */
+                background: rgba(20, 20, 20, 0.85);
+                backdrop-filter: blur(15px);
+                -webkit-backdrop-filter: blur(15px);
                 box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
                 display: block;
                 height: auto;
@@ -510,7 +574,10 @@
             .bubble-nav .submenu {
                 position: static;
                 transform: none;
-                background: rgba(15, 15, 15, 0.9);
+                /* 移动端二级菜单玻璃化 */
+                background: rgba(15, 15, 15, 0.7);
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
                 box-shadow: none;
                 border-radius: 0;
                 padding: 0;
@@ -590,6 +657,25 @@
                 padding: 15px;
             }
         }
+
+        /* 兼容不支持backdrop-filter的浏览器 */
+        @supports not (backdrop-filter: blur(1px)) {
+            .bubble-nav {
+                background: rgba(20, 20, 20, 0.9);
+            }
+            .bubble-nav .submenu {
+                background: rgba(30, 30, 30, 0.95);
+            }
+            .category-tabs {
+                background: rgba(25, 25, 25, 0.9);
+            }
+            .data-item-li > div {
+                background: linear-gradient(145deg, #1a1a1a 0%, #121212 100%);
+            }
+            .carousel-control {
+                background-color: rgba(0, 0, 0, 0.5);
+            }
+        }
     </style>
 </head>
 <body>
@@ -639,21 +725,18 @@
                     <div class="item active">
                         <img th:src="@{/frontStatic/image/banner1.jpg}" alt="轮播图1" class="img-responsive">
                         <div class="carousel-caption hidden-xs">
-                            <h3 style="font-size: 32px; font-weight: 700;">美味佳肴</h3>
                             <p style="font-size: 18px;">精选食材，用心烹制</p>
                         </div>
                     </div>
                     <div class="item">
                         <img th:src="@{/frontStatic/image/banner2.jpg}" alt="轮播图2" class="img-responsive">
                         <div class="carousel-caption hidden-xs">
-                            <h3 style="font-size: 32px; font-weight: 700;">特色甜点</h3>
                             <p style="font-size: 18px;">甜蜜滋味，回味无穷</p>
                         </div>
                     </div>
                     <div class="item">
                         <img th:src="@{/frontStatic/image/banner3.jpg}" alt="轮播图3" class="img-responsive">
                         <div class="carousel-caption hidden-xs">
-                            <h3 style="font-size: 32px; font-weight: 700;">健康饮品</h3>
                             <p style="font-size: 18px;">新鲜现做，营养健康</p>
                         </div>
                     </div>
