@@ -1,0 +1,49 @@
+.layui-layout-admin .layui-side,
+.layui-layout-admin .layui-side-scroll {
+    background-color: #343957 !important;
+}
+
+/* ===== Logo 区 ===== */
+.layui-layout-admin .layui-logo {
+    background-color: #343957 !important;
+}
+
+/* ===== 滚动条 ===== */
+.layui-side-scroll::-webkit-scrollbar-thumb {
+    background-color: #4a5072;
+}
+
+/* 顶部导航栏（可选：同步改为 #343957 保持风格统一） */
+.layui-header {
+    background-color: #343957 !important;
+}
+.layui-header .layui-nav {
+    background-color: transparent !important; /* 取消顶部导航默认背景，继承父级 */
+}
+.layui-header .layui-nav-item a {
+    color: #e5e6eb !important;
+}
+.layui-header .layui-nav-item a:hover {
+    color: #fff !important;
+}
+
+/* ===== 整体背景 ===== */
+.layui-layout-admin {
+    background: url("../images/background.jpg") no-repeat center center fixed;
+    background-size: cover;
+}
+
+/* ===== 内容区透明 ===== */
+.layui-body {
+    background-color: transparent !important;
+}
+/* ===== 侧边栏 ===== */
+.layui-layout-admin .layui-side {
+    background-color: rgba(52, 57, 87, 0.9) !important;
+}
+
+/* ===== 顶部 ===== */
+.layui-header {
+    background-color: rgba(52, 57, 87, 0.85) !important;
+    backdrop-filter: blur(6px);
+}
