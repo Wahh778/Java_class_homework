@@ -79,6 +79,19 @@ public class MyUserController {
         if (StrUtil.isEmpty(myUser.getRole())) {
             throw new CustomException("角色为空");
         }
+        // 新增角色唯一性校验：只限制 manager 和 chef
+        String role = myUser.getRole();
+        if ("manager".equals(role) || "chef".equals(role)) {
+            // 查询该角色是否已存在
+            LambdaQueryWrapper<MyUser> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(MyUser::getRole, role);
+            long count = myUserService.count(queryWrapper);
+            if (count > 0) {
+                // 角色已存在，拒绝新增
+                String roleName = "manager".equals(role) ? "食堂经理" : "厨房大厨";
+                return R.fail(roleName + "已存在，不允许新增");
+            }
+        }
         // 对默认密码进行加密
         String rawPassword = "123456"; // 默认初始密码
         String encodedPassword = passwordEncoder.encode(rawPassword); // 现在可以正常识别
