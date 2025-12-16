@@ -1,96 +1,146 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>首页</title>
-    <link rel="stylesheet" th:href="@{/frontStatic/css/main.css}">
+<!--    <link rel="stylesheet" th:href="@{/frontStatic/css/main.css}">-->
     <link rel="stylesheet" th:href="@{/frontStatic/css/font-awesome.min.css}">
     <link rel="stylesheet" th:href="@{/frontStatic/css/bootstrap/css/bootstrap.min.css}">
-    <link rel="icon" sizes="192x192" th:href="@{/admin/images/logo.png}"> <!-- 同时更新favicon路径 -->
+    <link rel="icon" sizes="192x192" th:href="@{/admin/images/logo.png}">
     <script type="text/javascript" th:src="@{/frontStatic/js/jquery.js}"></script>
     <script type="text/javascript" th:src="@{/frontStatic/css/bootstrap/js/bootstrap.min.js}"></script>
     <script type="text/javascript" th:src="@{/frontStatic/js/holder.js}"></script>
     <script type="text/javascript" th:src="@{/frontStatic/js/front/sort.js}"></script>
     <style>
-        /* 基础布局调整 */
-        body {
+        /* 基础重置与全局样式 */
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
         }
-
-        /* 移除容器宽度限制 */
+        body {
+            background: #0a0a0a;
+            color: #e0e0e0;
+            font-family: 'Microsoft Yahei', 'PingFang SC', Arial, sans-serif;
+            line-height: 1.5;
+        }
         #main.container {
             width: 100% !important;
             max-width: 100% !important;
-            padding: 0; /* 移除容器的左右内边距 */
+            padding: 0;
             margin: 0;
+            background: linear-gradient(135deg, #121212 0%, #1a1a1a 100%);
+        }
+        a {
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        ul, li {
+            list-style: none;
+        }
+        .clearfix::after {
+            content: '';
+            display: table;
+            clear: both;
         }
 
-        /* 气泡型导航栏样式 */
+        /* 导航栏 - 优化层级与交互 */
         .bubble-nav {
-            background-color: #fff;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            position: relative;
+            background: rgba(20, 20, 20, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
+            position: sticky;
+            top: 0;
             z-index: 999;
-            padding: 0 15px; /* 移动端保留少量内边距，PC端通过媒体查询移除 */
+            padding: 0 20px;
             width: 100%;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
-        /* Logo图片样式 */
         .bubble-nav .logo {
             float: left;
             line-height: 70px;
-            text-decoration: none;
             display: flex;
             align-items: center;
             height: 70px;
         }
         .bubble-nav .logo img {
-            height: 50px; /* Logo高度，可根据需要调整 */
-            width: auto;  /* 保持宽高比 */
+            height: 50px;
+            width: auto;
             max-height: 100%;
             object-fit: contain;
+            filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.7));
+        }
+        .nav-toggle {
+            display: none;
+            float: right;
+            line-height: 70px;
+            font-size: 24px;
+            color: #e0e0e0;
+            cursor: pointer;
+            padding: 0 10px;
+        }
+        .nav-toggle:hover {
+            color: #F22E00;
         }
         .bubble-nav .nav-list {
             float: right;
-            list-style: none;
-            margin: 0;
-            padding: 0;
+            display: flex;
+            align-items: center;
+            height: 70px;
         }
         .bubble-nav .nav-item {
             position: relative;
-            float: left;
-            margin: 0 15px;
+            margin: 0 10px;
         }
         .bubble-nav .nav-item > a {
             display: block;
             line-height: 70px;
-            color: #333;
-            text-decoration: none;
+            color: #e0e0e0;
             font-size: 16px;
             padding: 0 10px;
-            transition: all 0.3s ease;
+            position: relative;
+        }
+        .bubble-nav .nav-item > a::after {
+            content: '';
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #F22E00;
+            transition: width 0.3s ease;
         }
         .bubble-nav .nav-item > a:hover {
             color: #F22E00;
         }
-        /* 气泡二级菜单样式 */
+        .bubble-nav .nav-item > a:hover::after {
+            width: 100%;
+        }
+        .cart-icon {
+            color: #F22E00 !important;
+            font-size: 18px !important;
+        }
+
+        /* 二级菜单 - 优化定位与样式 */
         .bubble-nav .submenu {
             position: absolute;
-            top: 80px;
+            top: 100%;
             left: 50%;
             transform: translateX(-50%);
-            background-color: #fff;
-            border-radius: 10px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+            background: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
             padding: 15px 0;
-            min-width: 200px;
+            min-width: 220px;
             opacity: 0;
             visibility: hidden;
             transition: all 0.3s ease;
             z-index: 9999;
-            /* 气泡尖角 */
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 5px;
         }
         .bubble-nav .submenu::before {
             content: '';
@@ -100,353 +150,452 @@
             transform: translateX(-50%);
             border-width: 0 10px 10px 10px;
             border-style: solid;
-            border-color: transparent transparent #fff transparent;
+            border-color: transparent transparent rgba(30, 30, 30, 0.95) transparent;
         }
         .bubble-nav .nav-item:hover .submenu {
             opacity: 1;
             visibility: visible;
-            top: 70px;
+            margin-top: 0;
         }
         .bubble-nav .submenu li {
-            list-style: none;
             padding: 0 20px;
         }
         .bubble-nav .submenu li a {
             display: block;
             padding: 10px 0;
-            color: #666;
-            text-decoration: none;
+            color: #cccccc;
             font-size: 14px;
-            border-bottom: 1px solid #f5f5f5;
-            transition: all 0.2s ease;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
         .bubble-nav .submenu li:last-child a {
             border-bottom: none;
         }
         .bubble-nav .submenu li a:hover {
             color: #F22E00;
-            padding-left: 5px;
-        }
-        /* 购物车图标样式 */
-        .cart-icon {
-            color: #F22E00 !important;
-            font-size: 18px !important;
-        }
-        /* 响应式导航切换按钮 */
-        .nav-toggle {
-            display: none;
-            float: right;
-            line-height: 70px;
-            font-size: 24px;
-            color: #333;
-            cursor: pointer;
-        }
-        /* 清除浮动 */
-        .clearfix::after {
-            content: '';
-            display: table;
-            clear: both;
+            padding-left: 8px;
         }
 
-        /* 标签切换样式 */
-        .category-tabs {
-            margin: 20px 0;
-            border-bottom: 1px solid #ddd;
-            padding: 0 15px;
-        }
-        .category-tab {
-            display: inline-block;
-            padding: 10px 20px;
-            margin-bottom: -1px;
-            font-size: 16px;
-            font-weight: 500;
-            color: #555;
-            cursor: pointer;
-            border: 1px solid transparent;
-            border-radius: 4px 4px 0 0;
-            transition: all 0.3s ease;
-        }
-        .category-tab.active {
-            color: #F22E00;
-            background-color: #fff;
-            border: 1px solid #ddd;
-            border-bottom-color: transparent;
-        }
-        .category-tab:hover:not(.active) {
-            color: #F22E00;
-            border-color: #eee #eee #ddd;
-        }
-        .category-content {
-            display: none;
-            padding: 20px 15px;
-        }
-        .category-content.active {
-            display: block;
-            animation: fadeIn 0.5s ease;
-        }
-
-        /* 轮播图动画样式增强 */
+        /* 轮播图 - 优化性能与显示 */
         #mycarousel {
-            width: 100% !important;
-            max-width: 100% !important;
-            height: auto !important;
-            overflow: hidden;
-            position: relative;
-        }
-        /* 重写bootstrap轮播动画 */
-        .carousel-inner {
-            position: relative;
             width: 100%;
+            max-width: 100%;
+            height: auto;
             overflow: hidden;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         .carousel-inner > .item {
-            position: relative;
-            display: none;
-            -webkit-transition: 0.8s ease-in-out left;
-            -o-transition: 0.8s ease-in-out left;
             transition: 0.8s ease-in-out left;
         }
-        .carousel-inner > .item.active,
-        .carousel-inner > .item.next,
-        .carousel-inner > .item.prev {
-            display: block;
-        }
-        .carousel-inner > .item.active {
-            left: 0;
-        }
-        .carousel-inner > .item.next,
-        .carousel-inner > .item.prev {
-            position: absolute;
-            top: 0;
-            width: 100%;
-        }
-        .carousel-inner > .item.next {
-            left: 100%;
-        }
-        .carousel-inner > .item.prev {
-            left: -100%;
-        }
-        .carousel-inner > .item.next.left,
-        .carousel-inner > .item.prev.right {
-            left: 0;
-        }
-        .carousel-inner > .item.active.left {
-            left: -100%;
-        }
-        .carousel-inner > .item.active.right {
-            left: 100%;
-        }
-        /* 轮播图图片样式 */
         #mycarousel .item img {
-            width: 100% !important;
-            height: auto !important;
-            max-height: 400px;
+            width: 100%;
+            height: auto;
+            max-height: 450px;
             object-fit: cover;
-            transition: all 0.5s ease;
+            filter: brightness(0.85) contrast(1.1);
         }
-        /* 轮播图指示器样式优化 */
         .carousel-indicators {
-            bottom: 20px;
+            bottom: 25px;
         }
         .carousel-indicators li {
-            width: 12px;
-            height: 12px;
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
-            margin: 0 5px;
-            background-color: rgba(255, 255, 255, 0.5);
+            margin: 0 8px;
+            background-color: rgba(255, 255, 255, 0.3);
             border: none;
-            transition: all 0.3s ease;
+            transition: all 0.4s ease;
         }
         .carousel-indicators .active {
-            width: 30px;
-            height: 12px;
-            border-radius: 6px;
+            width: 40px;
+            height: 14px;
+            border-radius: 10px;
             background-color: #F22E00;
-            transform: scale(1.1);
+            box-shadow: 0 0 10px rgba(242, 46, 0, 0.6);
         }
-        /* 轮播图控制按钮样式 */
         .carousel-control {
-            width: 50px;
-            height: 50px;
+            width: 60px;
+            height: 60px;
             top: 50%;
             transform: translateY(-50%);
-            background-color: rgba(0, 0, 0, 0.3);
+            background-color: rgba(0, 0, 0, 0.5);
             border-radius: 50%;
             opacity: 0;
-            transition: all 0.3s ease;
+            transition: all 0.4s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         #mycarousel:hover .carousel-control {
             opacity: 1;
         }
-        .carousel-control.left,
-        .carousel-control.right {
-            background-image: none;
-        }
         .carousel-control .glyphicon-chevron-left,
         .carousel-control .glyphicon-chevron-right {
-            font-size: 20px;
-            margin-top: -10px;
+            font-size: 24px;
+            margin-top: -12px;
         }
-        /* 轮播图渐入动画（备选效果） */
-        @keyframes carouselFade {
-            from { opacity: 0.4; transform: scale(1.05); }
-            to { opacity: 1; transform: scale(1); }
-        }
-        .carousel-fade .carousel-inner .item {
-            transition-property: opacity, transform;
-            transform: scale(1.05);
-        }
-        .carousel-fade .carousel-inner .active {
-            opacity: 1;
-            transform: scale(1);
-            animation: carouselFade 1s ease;
+        .carousel-caption {
+            text-shadow: 0 2px 8px rgba(0,0,0,0.8);
         }
 
-        /* 菜品列表样式优化 */
+        /* 分类标签 - 完美居中+自适应 */
+        .category-tabs {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 15px 20px;
+            background: rgba(25, 25, 25, 0.8);
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .category-tabs::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(242, 46, 0, 0.1), transparent);
+            transition: left 0.8s ease;
+        }
+        .category-tabs:hover::before {
+            left: 100%;
+        }
+        .category-tab {
+            padding: 12px 28px;
+            font-size: 17px;
+            font-weight: 600;
+            color: #aaaaaa;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .category-tab::after {
+            content: '';
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 3px;
+            background: #F22E00;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        .category-tab.active {
+            color: #ffffff;
+            background: rgba(242, 46, 0, 0.15);
+            box-shadow: 0 0 15px rgba(242, 46, 0, 0.2);
+            transform: translateY(-2px);
+        }
+        .category-tab.active::after {
+            width: 80%;
+        }
+        .category-tab:hover:not(.active) {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-2px);
+        }
+
+        /* 菜品内容 - 核心优化：自适应网格+固定宽高比 */
+        .category-content {
+            display: none;
+            padding: 0 20px 40px;
+            animation: fadeIn 0.6s ease;
+        }
+        .category-content.active {
+            display: block;
+        }
+        .module {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .module .hd {
+            margin-bottom: 30px;
+            padding: 0 10px;
+        }
+        .module .hd h2 {
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: 700;
+            position: relative;
+            display: inline-block;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+        .module .hd h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(90deg, #F22E00, #ff6b4d);
+            border-radius: 2px;
+        }
+        .module .hd hr {
+            border-color: rgba(255, 255, 255, 0.1);
+            margin: 0;
+        }
+
+        /* 菜品网格 - 自适应布局核心 */
         .data {
-            margin: 0 -15px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 25px;
+            padding: 0 10px;
         }
         .data-item-li {
-            float: left;
-            width: 25%;
-            padding: 0 15px;
-            margin-bottom: 30px;
-            list-style: none;
-            box-sizing: border-box;
-        }
-        .data-item-li div {
-            background: #fff;
-            border-radius: 8px;
-            padding: 15px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
+            width: 100%;
             height: 100%;
         }
-        .data-item-li div:hover {
-            transform: translateY(-5px);
+        .data-item-li > div {
+            background: linear-gradient(145deg, #1a1a1a 0%, #121212 100%);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+        /* 卡片流光效果 */
+        .data-item-li > div::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(242, 46, 0, 0.05), transparent);
+            transition: left 0.8s ease;
+            z-index: 1;
+        }
+        .data-item-li > div:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(242, 46, 0, 0.2);
+        }
+        .data-item-li > div:hover::before {
+            left: 100%;
+        }
+
+        /* 菜品图片容器 - 固定宽高比，解决扭曲问题 */
+        .to-big {
+            position: relative;
+            width: 100%;
+            height: 0;
+            padding-bottom: 75%; /* 4:3 固定宽高比 */
+            margin-bottom: 15px;
+            border-radius: 8px;
+            overflow: hidden;
+            flex-shrink: 0;
         }
         .to-big img {
-            border-radius: 4px;
-            margin-bottom: 10px;
-            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            height: 200px;
+            height: 100%;
+            object-fit: cover;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            transition: transform 0.4s ease;
+            z-index: 0;
+        }
+        .data-item-li > div:hover .to-big img {
+            transform: scale(1.08);
         }
 
-        /* 响应式调整 */
-        @media (min-width: 768px) {
-            /* PC端导航栏完全铺满，移除内边距 */
-            .bubble-nav {
-                padding: 0;
-            }
-            /* PC端调整导航项的左右间距，保证最后一项贴右边 */
-            .bubble-nav .nav-item:last-child {
-                margin-right: 20px;
-            }
-            .bubble-nav .nav-item:first-child {
-                margin-left: 20px;
-            }
-            /* Logo贴左边 */
-            .bubble-nav .logo {
-                margin-left: 20px;
-            }
+        /* 菜品信息样式 */
+        .data-item-li .text-right {
+            margin-top: auto;
+            padding-top: 10px;
+        }
+        .data-item-li p a {
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: 600;
+            display: block;
+            line-height: 1.3;
+        }
+        .data-item-li p a:hover {
+            color: #F22E00;
+        }
+        .data-item-li .text-right b {
+            color: #F22E00;
+            font-size: 20px;
+            text-shadow: 0 0 10px rgba(242, 46, 0, 0.3);
+            display: block;
+            margin-top: 5px;
         }
 
+        /* 动画定义 */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 响应式适配 - 分阶段优化 */
+        @media (max-width: 1400px) {
+            .data {
+                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+                gap: 20px;
+            }
+        }
         @media (max-width: 1200px) {
-            .data-item-li {
-                width: 33.333%;
+            .data {
+                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            }
+            #mycarousel .item img {
+                max-height: 400px;
             }
         }
         @media (max-width: 992px) {
-            .data-item-li {
-                width: 50%;
+            .category-tab {
+                padding: 10px 22px;
+                font-size: 16px;
+            }
+            #mycarousel .item img {
+                max-height: 350px;
             }
         }
         @media (max-width: 768px) {
-            /* 移动端导航调整 */
+            /* 移动端导航重构 */
+            .nav-toggle {
+                display: block;
+            }
             .bubble-nav .nav-list {
                 float: none;
-                position: absolute;
+                position: fixed;
                 top: 70px;
                 left: 0;
                 right: 0;
-                background-color: #fff;
-                box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
-                display: none;
-                padding: 0;
-                margin: 0;
+                background: rgba(20, 20, 20, 0.98);
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+                display: block;
+                height: auto;
+                padding: 20px 0;
+                transform: translateX(100%);
+                opacity: 0;
+                visibility: hidden;
+                transition: all 0.4s ease;
+                z-index: 998;
+            }
+            .bubble-nav .nav-list.show {
+                transform: translateX(0);
+                opacity: 1;
+                visibility: visible;
             }
             .bubble-nav .nav-item {
                 float: none;
                 margin: 0;
-                border-bottom: 1px solid #f5f5f5;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             }
             .bubble-nav .nav-item > a {
-                line-height: 50px;
-                padding-left: 20px;
+                line-height: 60px;
+                padding-left: 30px;
+            }
+            .bubble-nav .nav-item > a::after {
+                display: none;
             }
             .bubble-nav .submenu {
                 position: static;
                 transform: none;
+                background: rgba(15, 15, 15, 0.9);
                 box-shadow: none;
                 border-radius: 0;
                 padding: 0;
+                margin: 0;
+                border: none;
                 display: none;
             }
             .bubble-nav .submenu::before {
                 display: none;
             }
-            .bubble-nav .nav-item:hover .submenu {
-                top: auto;
-                opacity: 1;
-                visibility: visible;
+            .bubble-nav .submenu li {
+                padding: 0 40px;
             }
             .bubble-nav .submenu li a {
-                padding-left: 30px;
-            }
-            .nav-toggle {
-                display: block;
-                margin-right: 15px;
-            }
-            .nav-list.show {
-                display: block;
-            }
-            /* 移动端Logo调整 */
-            .bubble-nav .logo img {
-                height: 40px;
+                padding: 12px 0;
             }
 
+            /* 移动端分类标签 */
+            .category-tabs {
+                margin: 20px auto;
+                padding: 10px;
+            }
+            .category-tab {
+                padding: 10px 18px;
+                font-size: 15px;
+                width: calc(50% - 5px);
+                text-align: center;
+                margin: 0;
+            }
+
+            /* 移动端菜品布局 */
+            .data {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 0;
+            }
             .data-item-li {
-                width: 100%;
+                max-width: 100%;
             }
+            .to-big {
+                padding-bottom: 80%; /* 移动端调整为更优比例 */
+            }
+
+            /* 移动端轮播图 */
             #mycarousel .item img {
-                max-height: 250px;
+                max-height: 280px;
             }
-            /* 移动端轮播指示器调整 */
             .carousel-indicators {
-                bottom: 10px;
+                bottom: 15px;
             }
             .carousel-indicators li {
-                width: 8px;
-                height: 8px;
+                width: 10px;
+                height: 10px;
+                margin: 0 5px;
             }
             .carousel-indicators .active {
-                width: 20px;
-                height: 8px;
+                width: 30px;
+                height: 10px;
+            }
+            .carousel-control {
+                width: 45px;
+                height: 45px;
             }
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        @media (max-width: 480px) {
+            .bubble-nav {
+                padding: 0 10px;
+            }
+            .category-content {
+                padding: 0 10px 30px;
+            }
+            .module .hd h2 {
+                font-size: 24px;
+            }
+            .data-item-li > div {
+                padding: 15px;
+            }
         }
     </style>
 </head>
 <body>
 <div id="main" class="container">
-    <!-- 气泡型导航栏 -->
+    <!-- 导航栏 -->
     <div class="bubble-nav clearfix">
-        <!-- Logo替换为admin路径下的图片 -->
         <a href="#" class="logo" th:href="@{/front/toMain}">
             <img th:src="@{/admin/images/logo.png}" alt="My Canteen Logo">
         </a>
@@ -473,7 +622,7 @@
                 <a th:href="@{/front/toShopCart}" class="cart-icon"><i class="fa fa-shopping-cart"></i> 购物车</a>
             </li>
             <li class="nav-item">
-                <a href="javascript:;"><i class="fa fa-user"></i> <span th:text="${session.currUser.name}">name</span> <i class="fa fa-angle-down"></i></a>
+                <a href="javascript:;"><i class="fa fa-user"></i> <span th:text="${session.currUser.name}">用户名</span> <i class="fa fa-angle-down"></i></a>
                 <ul class="submenu">
                     <li><a th:href="@{/front/toInfo}">账户管理</a></li>
                     <li><a th:href="@{/front/logout}" class="login-out">退出登录</a></li>
@@ -482,59 +631,55 @@
         </ul>
     </div>
 
+    <!-- 轮播图 -->
     <div id="header">
         <div class="header-bottom">
-            <!-- 轮播图 - 添加动画效果 -->
             <div id="mycarousel" class="carousel slide carousel-fade" data-ride="carousel" data-interval="5000">
-                <!-- 轮播内容 -->
                 <div class="carousel-inner" role="listbox">
                     <div class="item active">
                         <img th:src="@{/frontStatic/image/banner1.jpg}" alt="轮播图1" class="img-responsive">
-                        <!-- 可选：添加轮播文字描述 -->
                         <div class="carousel-caption hidden-xs">
-                            <h3 style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">美味佳肴</h3>
-                            <p style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">精选食材，用心烹制</p>
+                            <h3 style="font-size: 32px; font-weight: 700;">美味佳肴</h3>
+                            <p style="font-size: 18px;">精选食材，用心烹制</p>
                         </div>
                     </div>
                     <div class="item">
                         <img th:src="@{/frontStatic/image/banner2.jpg}" alt="轮播图2" class="img-responsive">
                         <div class="carousel-caption hidden-xs">
-                            <h3 style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">特色甜点</h3>
-                            <p style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">甜蜜滋味，回味无穷</p>
+                            <h3 style="font-size: 32px; font-weight: 700;">特色甜点</h3>
+                            <p style="font-size: 18px;">甜蜜滋味，回味无穷</p>
                         </div>
                     </div>
                     <div class="item">
                         <img th:src="@{/frontStatic/image/banner3.jpg}" alt="轮播图3" class="img-responsive">
                         <div class="carousel-caption hidden-xs">
-                            <h3 style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">健康饮品</h3>
-                            <p style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">新鲜现做，营养健康</p>
+                            <h3 style="font-size: 32px; font-weight: 700;">健康饮品</h3>
+                            <p style="font-size: 18px;">新鲜现做，营养健康</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- 轮播指示器 -->
                 <ol class="carousel-indicators">
                     <li data-target="#mycarousel" data-slide-to="0" class="active"></li>
                     <li data-target="#mycarousel" data-slide-to="1"></li>
                     <li data-target="#mycarousel" data-slide-to="2"></li>
                 </ol>
 
-                <!-- 轮播控制按钮 -->
                 <a class="left carousel-control" href="#mycarousel" role="button" data-slide="prev">
                     <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
-                    <span class="sr-only">Previous</span>
+                    <span class="sr-only">上一页</span>
                 </a>
                 <a class="right carousel-control" href="#mycarousel" role="button" data-slide="next">
                     <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
-                    <span class="sr-only">Next</span>
+                    <span class="sr-only">下一页</span>
                 </a>
             </div>
-            <div class="clear-float"></div>
         </div>
     </div>
 
+    <!-- 内容区域 -->
     <div class="content">
-        <!-- 菜式分类标签 -->
+        <!-- 分类标签 -->
         <div class="category-tabs">
             <div class="category-tab active" data-category="菜肴">菜肴</div>
             <div class="category-tab" data-category="甜点">甜点</div>
@@ -551,24 +696,21 @@
                 </div>
                 <div class="bd">
                     <div class="data">
-                        <ul>
-                            <li class="data-item-li" th:each="menu : ${session.menuList}" th:if="${menu.category == '菜肴'}">
-                                <div>
-                                    <div class="to-big">
-                                        <a th:href="@{|/front/toDetail/${menu.menuId}|}">
-                                            <img th:src="@{|/picture/${menu.picture}|}" alt="菜品图片"/>
-                                        </a>
-                                    </div>
-                                    <p class="text-right">
-                                        <a th:href="@{|/front/toDetail/${menu.menuId}|}" th:text="${menu.name}">菜品</a>
-                                    </p>
-                                    <div class="text-right">
-                                        <b th:text="'￥' + ${menu.price}">￥00.00</b>
-                                    </div>
+                        <li class="data-item-li" th:each="menu : ${session.menuList}" th:if="${menu.category == '菜肴'}">
+                            <div>
+                                <div class="to-big">
+                                    <a th:href="@{|/front/toDetail/${menu.menuId}|}">
+                                        <img th:src="@{|/picture/${menu.picture}|}" alt="菜品图片" th:alt="${menu.name}"/>
+                                    </a>
                                 </div>
-                            </li>
-                            <div class="clear-float" style="clear: both;"></div>
-                        </ul>
+                                <div class="text-right">
+                                    <p>
+                                        <a th:href="@{|/front/toDetail/${menu.menuId}|}" th:text="${menu.name}">菜品名称</a>
+                                    </p>
+                                    <b th:text="'￥' + ${menu.price}">￥00.00</b>
+                                </div>
+                            </div>
+                        </li>
                     </div>
                 </div>
             </div>
@@ -583,24 +725,21 @@
                 </div>
                 <div class="bd">
                     <div class="data">
-                        <ul>
-                            <li class="data-item-li" th:each="menu : ${session.menuList}" th:if="${menu.category == '甜点'}">
-                                <div>
-                                    <div class="to-big">
-                                        <a th:href="@{|/front/toDetail/${menu.menuId}|}">
-                                            <img th:src="@{|/picture/${menu.picture}|}" alt="菜品图片"/>
-                                        </a>
-                                    </div>
-                                    <p class="text-right">
-                                        <a th:href="@{|/front/toDetail/${menu.menuId}|}" th:text="${menu.name}">菜品</a>
-                                    </p>
-                                    <div class="text-right">
-                                        <b th:text="'￥' + ${menu.price}">￥00.00</b>
-                                    </div>
+                        <li class="data-item-li" th:each="menu : ${session.menuList}" th:if="${menu.category == '甜点'}">
+                            <div>
+                                <div class="to-big">
+                                    <a th:href="@{|/front/toDetail/${menu.menuId}|}">
+                                        <img th:src="@{|/picture/${menu.picture}|}" alt="菜品图片" th:alt="${menu.name}"/>
+                                    </a>
                                 </div>
-                            </li>
-                            <div class="clear-float" style="clear: both;"></div>
-                        </ul>
+                                <div class="text-right">
+                                    <p>
+                                        <a th:href="@{|/front/toDetail/${menu.menuId}|}" th:text="${menu.name}">菜品名称</a>
+                                    </p>
+                                    <b th:text="'￥' + ${menu.price}">￥00.00</b>
+                                </div>
+                            </div>
+                        </li>
                     </div>
                 </div>
             </div>
@@ -615,24 +754,21 @@
                 </div>
                 <div class="bd">
                     <div class="data">
-                        <ul>
-                            <li class="data-item-li" th:each="menu : ${session.menuList}" th:if="${menu.category == '主食'}">
-                                <div>
-                                    <div class="to-big">
-                                        <a th:href="@{|/front/toDetail/${menu.menuId}|}">
-                                            <img th:src="@{|/picture/${menu.picture}|}" alt="菜品图片"/>
-                                        </a>
-                                    </div>
-                                    <p class="text-right">
-                                        <a th:href="@{|/front/toDetail/${menu.menuId}|}" th:text="${menu.name}">菜品</a>
-                                    </p>
-                                    <div class="text-right">
-                                        <b th:text="'￥' + ${menu.price}">￥00.00</b>
-                                    </div>
+                        <li class="data-item-li" th:each="menu : ${session.menuList}" th:if="${menu.category == '主食'}">
+                            <div>
+                                <div class="to-big">
+                                    <a th:href="@{|/front/toDetail/${menu.menuId}|}">
+                                        <img th:src="@{|/picture/${menu.picture}|}" alt="菜品图片" th:alt="${menu.name}"/>
+                                    </a>
                                 </div>
-                            </li>
-                            <div class="clear-float" style="clear: both;"></div>
-                        </ul>
+                                <div class="text-right">
+                                    <p>
+                                        <a th:href="@{|/front/toDetail/${menu.menuId}|}" th:text="${menu.name}">菜品名称</a>
+                                    </p>
+                                    <b th:text="'￥' + ${menu.price}">￥00.00</b>
+                                </div>
+                            </div>
+                        </li>
                     </div>
                 </div>
             </div>
@@ -647,24 +783,21 @@
                 </div>
                 <div class="bd">
                     <div class="data">
-                        <ul>
-                            <li class="data-item-li" th:each="menu : ${session.menuList}" th:if="${menu.category == '饮品'}">
-                                <div>
-                                    <div class="to-big">
-                                        <a th:href="@{|/front/toDetail/${menu.menuId}|}">
-                                            <img th:src="@{|/picture/${menu.picture}|}" alt="菜品图片"/>
-                                        </a>
-                                    </div>
-                                    <p class="text-right">
-                                        <a th:href="@{|/front/toDetail/${menu.menuId}|}" th:text="${menu.name}">菜品</a>
-                                    </p>
-                                    <div class="text-right">
-                                        <b th:text="'￥' + ${menu.price}">￥00.00</b>
-                                    </div>
+                        <li class="data-item-li" th:each="menu : ${session.menuList}" th:if="${menu.category == '饮品'}">
+                            <div>
+                                <div class="to-big">
+                                    <a th:href="@{|/front/toDetail/${menu.menuId}|}">
+                                        <img th:src="@{|/picture/${menu.picture}|}" alt="菜品图片" th:alt="${menu.name}"/>
+                                    </a>
                                 </div>
-                            </li>
-                            <div class="clear-float" style="clear: both;"></div>
-                        </ul>
+                                <div class="text-right">
+                                    <p>
+                                        <a th:href="@{|/front/toDetail/${menu.menuId}|}" th:text="${menu.name}">菜品名称</a>
+                                    </p>
+                                    <b th:text="'￥' + ${menu.price}">￥00.00</b>
+                                </div>
+                            </div>
+                        </li>
                     </div>
                 </div>
             </div>
@@ -673,88 +806,122 @@
 </div>
 
 <script>
-    // 移动端导航切换
     $(document).ready(function() {
-        // 导航切换按钮
+        // 移动端导航切换
         $('.nav-toggle').click(function() {
             $('.nav-list').toggleClass('show');
+            // 阻止页面滚动
+            if ($('.nav-list').hasClass('show')) {
+                $('body').css('overflow', 'hidden');
+            } else {
+                $('body').css('overflow', 'auto');
+            }
         });
 
-        // 点击标签切换显示内容
+        // 分类标签切换
         $('.category-tab').click(function() {
+            var category = $(this).data('category');
+            // 标签激活状态切换
             $('.category-tab').removeClass('active');
             $(this).addClass('active');
-            var category = $(this).data('category');
+            // 内容切换
             $('.category-content').removeClass('active');
             $('#content-' + category).addClass('active');
+            // 点击动画
+            $(this).addClass('active-click');
+            setTimeout(() => {
+                $(this).removeClass('active-click');
+            }, 300);
+            // 滚动到分类区域
+            $('html, body').animate({
+                scrollTop: $('.category-tabs').offset().top - 80
+            }, 600, 'swing');
         });
 
-        // 二级菜单点击关闭（移动端）
+        // 二级菜单点击关闭移动端导航
         $('.submenu li a').click(function() {
             if ($(window).width() < 768) {
                 $('.nav-list').removeClass('show');
+                $('body').css('overflow', 'auto');
             }
         });
 
-        // 窗口大小变化时重新计算布局
+        // 窗口大小变化处理
         $(window).resize(function() {
             if ($(window).width() >= 768) {
                 $('.nav-list').removeClass('show');
+                $('body').css('overflow', 'auto');
             }
         });
 
-        // 轮播图触摸滑动支持（移动端）
-        $("#mycarousel").on("touchstart", function(event) {
-            var x = event.originalEvent.touches[0].clientX;
-            $(this).data("touchStartX", x);
+        // 轮播图触摸滑动支持
+        $("#mycarousel").on("touchstart", function(e) {
+            var touch = e.originalEvent.touches[0];
+            $(this).data('touchStartX', touch.clientX);
+            $(this).data('touchStartTime', new Date().getTime());
         });
-        $("#mycarousel").on("touchend", function(event) {
-            var x = event.originalEvent.changedTouches[0].clientX;
-            var startX = $(this).data("touchStartX");
-            if (x - startX > 50) {
-                $(this).carousel('prev');
-            } else if (x - startX < -50) {
-                $(this).carousel('next');
+        $("#mycarousel").on("touchend", function(e) {
+            var touch = e.originalEvent.changedTouches[0];
+            var startX = $(this).data('touchStartX');
+            var endX = touch.clientX;
+            var deltaX = endX - startX;
+            var deltaTime = new Date().getTime() - $(this).data('touchStartTime');
+
+            // 滑动距离和时间判断
+            if (Math.abs(deltaX) > 50 && deltaTime < 500) {
+                if (deltaX > 0) {
+                    $(this).carousel('prev');
+                } else {
+                    $(this).carousel('next');
+                }
             }
         });
 
-        // 初始化轮播图，设置自动播放和动画
+        // 初始化轮播图
         $('#mycarousel').carousel({
-            interval: 5000, // 5秒自动切换
-            pause: "hover", // 鼠标悬停暂停
-            wrap: true,     // 循环播放
-            keyboard: true  // 支持键盘方向键
+            interval: 5000,
+            pause: "hover",
+            wrap: true,
+            keyboard: true
         });
 
-        // 轮播图切换时的额外动画效果
-        $('#mycarousel').on('slide.bs.carousel', function (e) {
-            // 淡出当前项
+        // 轮播图切换动画增强
+        $('#mycarousel').on('slide.bs.carousel', function(e) {
             $(e.relatedTarget).find('img').css({
                 'opacity': 0.8,
                 'transform': 'scale(1.05)'
             });
         });
-        $('#mycarousel').on('slid.bs.carousel', function (e) {
-            // 淡入新项
+        $('#mycarousel').on('slid.bs.carousel', function(e) {
             $(e.relatedTarget).find('img').animate({
                 'opacity': 1,
                 'transform': 'scale(1)'
             }, 800);
         });
+
+        // 点击空白处关闭移动端导航
+        $(document).click(function(e) {
+            if ($(window).width() < 768) {
+                if (!$(e.target).closest('.bubble-nav').length) {
+                    $('.nav-list').removeClass('show');
+                    $('body').css('overflow', 'auto');
+                }
+            }
+        });
     });
 
     // 导航栏分类切换函数
     function switchCategory(category) {
-        // 切换标签激活状态
-        $('.category-tab').removeClass('active');
-        $('.category-tab[data-category="' + category + '"]').addClass('active');
-        // 切换内容显示
-        $('.category-content').removeClass('active');
-        $('#content-' + category).addClass('active');
-        // 滚动到分类区域
-        $('html, body').animate({
-            scrollTop: $('.category-tabs').offset().top - 80
-        }, 500);
+        // 触发对应标签的点击事件
+        $('.category-tab[data-category="' + category + '"]').click();
+    }
+
+    // 平滑滚动polyfill（兼容旧浏览器）
+    if (!Element.prototype.scrollIntoView) {
+        Element.prototype.scrollIntoView = function(alignToTop) {
+            var top = this.getBoundingClientRect().top + window.pageYOffset - (alignToTop ? 0 : window.innerHeight / 2);
+            window.scrollTo(0, top);
+        };
     }
 </script>
 </body>
