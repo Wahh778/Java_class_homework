@@ -62,14 +62,15 @@
 
         table.render({
             elem: '#user-table',
+            id: 'user-table',
             url: '/order/pageChef',
             page: true,
             parseData:function(res) {
                 return {
-                    "code" : 0,
-                    "msg" : "",
-                    "count" : res.data.total,
-                    "data": res.data.records
+                    code: 0,
+                    msg: "",
+                    count: res.data.total,
+                    data: res.data.records
                 }
             },
             cols: cols,

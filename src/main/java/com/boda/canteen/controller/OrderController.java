@@ -19,6 +19,7 @@ import com.boda.canteen.exception.CustomException;
 import com.boda.canteen.security.service.BlanketOrderService;
 import com.boda.canteen.security.service.OrderFormService;
 import com.boda.canteen.security.service.ShopCartService;
+import io.jsonwebtoken.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +29,7 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -124,6 +126,22 @@ public class OrderController {
     }
 
     /**
+     * 订单详情接口
+     */
+    @GetMapping("/boPage")
+    public R<Page<BlanketOrder>> boPage(int page, int limit, HttpServletRequest request){
+        Page<BlanketOrder> pageInfo = new Page<>(page, limit);
+
+        Long orderId = (Long) request.getSession().getAttribute("detailsId");
+
+        LambdaQueryWrapper<BlanketOrder> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(orderId != null, BlanketOrder::getOrderId, orderId);
+        blanketOrderService.page(pageInfo, queryWrapper);
+
+        return R.success(pageInfo);
+    }
+
+    /**
      * 厨师专栏订单分页接口
      */
     @GetMapping("/pageChef")
@@ -185,59 +203,124 @@ public class OrderController {
     /**
      * 配送员批量打印功能
      */
-    @GetMapping("/printCaterer/{orderIds}")
-    public void printByBatchWithCaterer(@PathVariable String orderIds, HttpServletResponse response) {
-        LambdaQueryWrapper<OrderForm> queryWrapper = new LambdaQueryWrapper<>();
-        Date begin = DateUtil.beginOfDay(DateUtil.date());
-        Date end = DateUtil.endOfDay(DateUtil.date());
-        queryWrapper.between(OrderForm::getOrderTime, begin, end)
-                .in(OrderForm::getOrderId, Arrays.stream(orderIds.split(",")).toArray());
-        List<OrderForm> list = orderFormService.list(queryWrapper);
-        ServletOutputStream out = null;
-        if (list.size() >= 1) {
-            int cnt = 0;
-            try (ExcelWriter writer = ExcelUtil.getWriterWithSheet(String.valueOf(list.get(cnt).getOrderId()))) {
-                for (OrderForm o : list) {
-                    if (cnt != 0) writer.setSheet(String.valueOf(o.getOrderId()));
-                    writer.merge(5, "今日配送信息");
-                    Map<String, Object> map = new LinkedHashMap<>();
-                    map.put("订单编号", String.valueOf(o.getOrderId()));
-                    map.put("用户名", o.getName());
-                    map.put("电话", o.getTelephone());
-                    map.put("下单时间", DateUtil.format(o.getOrderTime(), "HH:mm:ss"));
-                    map.put("", "");
-                    map.put("订单金额", o.getOrderPrice());
-                    ArrayList<Map<String, Object>> list1 = new ArrayList<>();
-                    list1.add(map);
-                    writer.write(list1, true);
-                    LambdaQueryWrapper<BlanketOrder> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-                    lambdaQueryWrapper.eq(BlanketOrder::getOrderId, o.getOrderId());
-                    List<BlanketOrder> blanketOrderList = blanketOrderService.list(lambdaQueryWrapper);
-                    ArrayList<Map<String, Object>> list2 = new ArrayList<>();
-                    for (BlanketOrder bo : blanketOrderList) {
-                        Map<String, Object> map1 = new LinkedHashMap<>();
-                        map1.put("菜品名称", bo.getName());
-                        map1.put("计量单位", bo.getUnit());
-                        map1.put("数量", bo.getWeight());
-                        map1.put("单价", bo.getPrice());
-                        map1.put("总计", bo.getTotalPrice());
-                        map1.put("下单时间", DateUtil.format(bo.getCreateTime(), "HH:mm:ss"));
-                        list2.add(map1);
+    @GetMapping("/exportExcel/{orderIds}")
+    public void exportExcel(
+            @PathVariable String orderIds,
+            HttpServletResponse response) {
+
+        try {
+            // 查询订单
+            List<OrderForm> orders = orderFormService.list(
+                    new LambdaQueryWrapper<OrderForm>()
+                            .in(OrderForm::getOrderId, orderIds.split(","))
+            );
+
+            if (orders.isEmpty()) {
+                response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+                return;
+            }
+
+            // 查询订单详情
+            List<Long> orderIdList = orders.stream()
+                    .map(OrderForm::getOrderId)
+                    .collect(Collectors.toList());
+
+            List<BlanketOrder> details = blanketOrderService.list(
+                    new LambdaQueryWrapper<BlanketOrder>()
+                            .in(BlanketOrder::getOrderId, orderIdList)
+            );
+
+            // 详情按订单ID分组
+            Map<Long, List<BlanketOrder>> detailMap =
+                    details.stream()
+                            .collect(Collectors.groupingBy(BlanketOrder::getOrderId));
+
+            // 设置响应头（⚠ 必须在 getOutputStream 之前）
+            response.reset();
+            response.setContentType("application/vnd.ms-excel;charset=UTF-8");
+            response.setHeader(
+                    "Content-Disposition",
+                    "attachment;filename=orders.xls"
+            );
+
+            ServletOutputStream out = response.getOutputStream();
+            ExcelWriter writer = ExcelUtil.getWriter(true);
+
+            List<Map<String, Object>> rows = new ArrayList<>();
+
+            // 记录每个订单的行范围
+            List<int[]> mergeRanges = new ArrayList<>();
+
+            int rowIndex = 1; // ⚠️ Hutool 默认第 0 行是表头
+
+            for (OrderForm o : orders) {
+                List<BlanketOrder> orderDetails =
+                        detailMap.getOrDefault(o.getOrderId(), Collections.emptyList());
+
+                int startRow = rowIndex;
+
+                // 没有点餐，也占一行
+                if (orderDetails.isEmpty()) {
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("订单编号", o.getOrderId());
+                    row.put("用户名", o.getName());
+                    row.put("电话", o.getTelephone());
+                    row.put("下单时间",
+                            DateUtil.format(o.getOrderTime(), "yyyy-MM-dd HH:mm:ss"));
+                    row.put("订单金额", o.getOrderPrice());
+
+                    row.put("菜品名称", "");
+                    row.put("数量", "");
+                    row.put("单价", "");
+                    row.put("小计", "");
+
+                    rows.add(row);
+                    rowIndex++;
+
+                } else {
+                    for (BlanketOrder d : orderDetails) {
+                        Map<String, Object> row = new LinkedHashMap<>();
+                        row.put("订单编号", o.getOrderId());
+                        row.put("用户名", o.getName());
+                        row.put("电话", o.getTelephone());
+                        row.put("下单时间",
+                                DateUtil.format(o.getOrderTime(), "yyyy-MM-dd HH:mm:ss"));
+                        row.put("订单金额", o.getOrderPrice());
+
+                        row.put("菜品名称", d.getName());
+                        row.put("数量", d.getWeight());
+                        row.put("单价", d.getPrice());
+                        row.put("小计", d.getTotalPrice());
+
+                        rows.add(row);
+                        rowIndex++;
                     }
-                    writer.write(list2, true);
-                    cnt++;
                 }
-                response.setContentType("application/vnd.ms-excel;charset=utf-8");
-                response.setHeader("Content-Disposition", "attachment;filename=orderByCaterer.xls");
-                out = response.getOutputStream();
-                writer.flush(out, true);
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                if (out != null) {
-                    IoUtil.close(out);
+
+                int endRow = rowIndex - 1;
+
+                // 只有多行才需要 merge
+                if (endRow > startRow) {
+                    mergeRanges.add(new int[]{startRow, endRow});
                 }
             }
+
+            writer.write(rows, true);
+
+            for (int[] range : mergeRanges) {
+                int start = range[0];
+                int end = range[1];
+
+                for (int col = 0; col <= 4; col++) {
+                    writer.merge(start, end, col, col, null, false);
+                }
+            }
+
+            writer.flush(out, true);
+            writer.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -293,21 +376,5 @@ public class OrderController {
                 }
             }
         }
-    }
-
-    /**
-     * 订单详情接口
-     */
-    @GetMapping("/boPage")
-    public R<Page<BlanketOrder>> boPage(int page, int limit, HttpServletRequest request){
-        Page<BlanketOrder> pageInfo = new Page<>(page, limit);
-
-        Long orderId = (Long) request.getSession().getAttribute("detailsId");
-
-        LambdaQueryWrapper<BlanketOrder> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(orderId != null, BlanketOrder::getOrderId, orderId);
-        blanketOrderService.page(pageInfo, queryWrapper);
-
-        return R.success(pageInfo);
     }
 }

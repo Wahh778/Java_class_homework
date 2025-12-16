@@ -78,6 +78,7 @@
 
         table.render({
             elem: '#user-table',
+            id: 'user-table',
             url: '/order/page',
             page: true,
             parseData:function(res) {
@@ -131,7 +132,9 @@
                     layer.close(index);
                     let loading = layer.load();
                     // 创建get请求路径
-                    let downloadUrl = "http://localhost:8088/order/printCaterer/" + checkIds;
+                    let downloadUrl = "http://localhost:8088/order/exportExcel/" + checkIds;
+                    console.log(downloadUrl)
+                    window.location.href = downloadUrl;
                     // 创建a标签
                     let label = $("<a>");
                     // 添加属性
