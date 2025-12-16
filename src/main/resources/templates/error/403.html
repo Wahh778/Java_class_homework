@@ -1,20 +1,83 @@
+<!--<!DOCTYPE html>-->
+<!--<html lang="en" xmlns:th="http://www.thymeleaf.org">-->
+<!--	<head>-->
+<!--		<meta charset="utf-8">-->
+<!--		<title></title>-->
+<!--		<link th:href="@{/component/pear/css/pear.css}" rel="stylesheet" />-->
+<!--		<link th:href="@{/admin/css/other/error.css}" rel="stylesheet" />-->
+<!--	</head>-->
+<!--	<body>-->
+<!--		<div class="content">-->
+<!--			<img th:src="@{/admin/images/403.svg}" alt="">-->
+<!--			<div class="content-r">-->
+<!--				<h1>403</h1>-->
+<!--				<p>抱歉，你无权访问该页面</p>-->
+<!--			</div>-->
+<!--		</div>-->
+<!--		<script th:src="@{/component/layui/layui.js}"></script>-->
+<!--		<script th:src="@{/component/pear/pear.js}"></script>-->
+<!--	</body>-->
+<!--</html>-->
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-	<head>
-		<meta charset="utf-8">
-		<title></title>
-		<link th:href="@{/component/pear/css/pear.css}" rel="stylesheet" />
-		<link th:href="@{/admin/css/other/error.css}" rel="stylesheet" />
-	</head>
-	<body>
-		<div class="content">
-			<img th:src="@{/admin/images/403.svg}" alt="">
-			<div class="content-r">
-				<h1>403</h1>
-				<p>抱歉，你无权访问该页面</p>
-			</div>
-		</div>
-		<script th:src="@{/component/layui/layui.js}"></script>
-		<script th:src="@{/component/pear/pear.js}"></script>
-	</body>
+<head>
+	<meta charset="utf-8">
+	<title></title>
+	<link th:href="@{/component/pear/css/pear.css}" rel="stylesheet" />
+	<link th:href="@{/admin/css/other/error.css}" rel="stylesheet" />
+	<style>
+		/* 图片旋转动画 - 匀速循环旋转，保留原有尺寸 */
+		.content img {
+			animation: imgRotate 8s linear infinite;
+			/* 防止旋转时位移 */
+			transform-origin: center center;
+		}
+
+		/* 旋转动画关键帧 - 360度循环旋转 */
+		@keyframes imgRotate {
+			0% {
+				transform: rotate(0deg);
+			}
+			100% {
+				transform: rotate(360deg);
+			}
+		}
+
+		/* 403字体跳动动画 */
+		.content-r h1 {
+			animation: numberJump 1s ease-in-out infinite;
+			/* 保留原有字体大小，仅添加动画 */
+			position: relative;
+		}
+
+		/* 跳动动画关键帧 - 上下轻微跳动 */
+		@keyframes numberJump {
+			0% {
+				transform: translateY(0);
+			}
+			50% {
+				transform: translateY(-10px);
+			}
+			100% {
+				transform: translateY(0);
+			}
+		}
+
+		/* 可选：给跳动的403加一点阴影增强视觉效果（不影响布局） */
+		.content-r h1 {
+			text-shadow: 0 4px 6px rgba(0,0,0,0.1);
+		}
+	</style>
+</head>
+<body>
+<div class="content">
+	<img th:src="@{/admin/images/logo.png}" alt="">
+	<div class="content-r">
+		<h1>403</h1>
+		<p>抱歉，你无权访问该页面</p>
+	</div>
+</div>
+<script th:src="@{/component/layui/layui.js}"></script>
+<script th:src="@{/component/pear/pear.js}"></script>
+</body>
 </html>

@@ -3,97 +3,528 @@
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>餐厅首页</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>首页</title>
     <link rel="stylesheet" th:href="@{/frontStatic/css/main.css}">
-    <link rel="stylesheet" th:href="@{/frontStatic/css/font-awesome.min.css}">   <!-- 头部样式 -->
+    <link rel="stylesheet" th:href="@{/frontStatic/css/font-awesome.min.css}">
     <link rel="stylesheet" th:href="@{/frontStatic/css/bootstrap/css/bootstrap.min.css}">
-    <link rel="icon" sizes="192x192" th:href="@{/frontStatic/image/logo.png}">
+    <link rel="icon" sizes="192x192" th:href="@{/admin/images/logo.png}"> <!-- 同时更新favicon路径 -->
     <script type="text/javascript" th:src="@{/frontStatic/js/jquery.js}"></script>
     <script type="text/javascript" th:src="@{/frontStatic/css/bootstrap/js/bootstrap.min.js}"></script>
     <script type="text/javascript" th:src="@{/frontStatic/js/holder.js}"></script>
     <script type="text/javascript" th:src="@{/frontStatic/js/front/sort.js}"></script>
+    <style>
+        /* 基础布局调整 */
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        /* 移除容器宽度限制 */
+        #main.container {
+            width: 100% !important;
+            max-width: 100% !important;
+            padding: 0; /* 移除容器的左右内边距 */
+            margin: 0;
+        }
+
+        /* 气泡型导航栏样式 */
+        .bubble-nav {
+            background-color: #fff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 999;
+            padding: 0 15px; /* 移动端保留少量内边距，PC端通过媒体查询移除 */
+            width: 100%;
+        }
+        /* Logo图片样式 */
+        .bubble-nav .logo {
+            float: left;
+            line-height: 70px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            height: 70px;
+        }
+        .bubble-nav .logo img {
+            height: 50px; /* Logo高度，可根据需要调整 */
+            width: auto;  /* 保持宽高比 */
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .bubble-nav .nav-list {
+            float: right;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .bubble-nav .nav-item {
+            position: relative;
+            float: left;
+            margin: 0 15px;
+        }
+        .bubble-nav .nav-item > a {
+            display: block;
+            line-height: 70px;
+            color: #333;
+            text-decoration: none;
+            font-size: 16px;
+            padding: 0 10px;
+            transition: all 0.3s ease;
+        }
+        .bubble-nav .nav-item > a:hover {
+            color: #F22E00;
+        }
+        /* 气泡二级菜单样式 */
+        .bubble-nav .submenu {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+            padding: 15px 0;
+            min-width: 200px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 9999;
+            /* 气泡尖角 */
+        }
+        .bubble-nav .submenu::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 0 10px 10px 10px;
+            border-style: solid;
+            border-color: transparent transparent #fff transparent;
+        }
+        .bubble-nav .nav-item:hover .submenu {
+            opacity: 1;
+            visibility: visible;
+            top: 70px;
+        }
+        .bubble-nav .submenu li {
+            list-style: none;
+            padding: 0 20px;
+        }
+        .bubble-nav .submenu li a {
+            display: block;
+            padding: 10px 0;
+            color: #666;
+            text-decoration: none;
+            font-size: 14px;
+            border-bottom: 1px solid #f5f5f5;
+            transition: all 0.2s ease;
+        }
+        .bubble-nav .submenu li:last-child a {
+            border-bottom: none;
+        }
+        .bubble-nav .submenu li a:hover {
+            color: #F22E00;
+            padding-left: 5px;
+        }
+        /* 购物车图标样式 */
+        .cart-icon {
+            color: #F22E00 !important;
+            font-size: 18px !important;
+        }
+        /* 响应式导航切换按钮 */
+        .nav-toggle {
+            display: none;
+            float: right;
+            line-height: 70px;
+            font-size: 24px;
+            color: #333;
+            cursor: pointer;
+        }
+        /* 清除浮动 */
+        .clearfix::after {
+            content: '';
+            display: table;
+            clear: both;
+        }
+
+        /* 标签切换样式 */
+        .category-tabs {
+            margin: 20px 0;
+            border-bottom: 1px solid #ddd;
+            padding: 0 15px;
+        }
+        .category-tab {
+            display: inline-block;
+            padding: 10px 20px;
+            margin-bottom: -1px;
+            font-size: 16px;
+            font-weight: 500;
+            color: #555;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-radius: 4px 4px 0 0;
+            transition: all 0.3s ease;
+        }
+        .category-tab.active {
+            color: #F22E00;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-bottom-color: transparent;
+        }
+        .category-tab:hover:not(.active) {
+            color: #F22E00;
+            border-color: #eee #eee #ddd;
+        }
+        .category-content {
+            display: none;
+            padding: 20px 15px;
+        }
+        .category-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        /* 轮播图动画样式增强 */
+        #mycarousel {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+            overflow: hidden;
+            position: relative;
+        }
+        /* 重写bootstrap轮播动画 */
+        .carousel-inner {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+        }
+        .carousel-inner > .item {
+            position: relative;
+            display: none;
+            -webkit-transition: 0.8s ease-in-out left;
+            -o-transition: 0.8s ease-in-out left;
+            transition: 0.8s ease-in-out left;
+        }
+        .carousel-inner > .item.active,
+        .carousel-inner > .item.next,
+        .carousel-inner > .item.prev {
+            display: block;
+        }
+        .carousel-inner > .item.active {
+            left: 0;
+        }
+        .carousel-inner > .item.next,
+        .carousel-inner > .item.prev {
+            position: absolute;
+            top: 0;
+            width: 100%;
+        }
+        .carousel-inner > .item.next {
+            left: 100%;
+        }
+        .carousel-inner > .item.prev {
+            left: -100%;
+        }
+        .carousel-inner > .item.next.left,
+        .carousel-inner > .item.prev.right {
+            left: 0;
+        }
+        .carousel-inner > .item.active.left {
+            left: -100%;
+        }
+        .carousel-inner > .item.active.right {
+            left: 100%;
+        }
+        /* 轮播图图片样式 */
+        #mycarousel .item img {
+            width: 100% !important;
+            height: auto !important;
+            max-height: 400px;
+            object-fit: cover;
+            transition: all 0.5s ease;
+        }
+        /* 轮播图指示器样式优化 */
+        .carousel-indicators {
+            bottom: 20px;
+        }
+        .carousel-indicators li {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin: 0 5px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border: none;
+            transition: all 0.3s ease;
+        }
+        .carousel-indicators .active {
+            width: 30px;
+            height: 12px;
+            border-radius: 6px;
+            background-color: #F22E00;
+            transform: scale(1.1);
+        }
+        /* 轮播图控制按钮样式 */
+        .carousel-control {
+            width: 50px;
+            height: 50px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(0, 0, 0, 0.3);
+            border-radius: 50%;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+        #mycarousel:hover .carousel-control {
+            opacity: 1;
+        }
+        .carousel-control.left,
+        .carousel-control.right {
+            background-image: none;
+        }
+        .carousel-control .glyphicon-chevron-left,
+        .carousel-control .glyphicon-chevron-right {
+            font-size: 20px;
+            margin-top: -10px;
+        }
+        /* 轮播图渐入动画（备选效果） */
+        @keyframes carouselFade {
+            from { opacity: 0.4; transform: scale(1.05); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .carousel-fade .carousel-inner .item {
+            transition-property: opacity, transform;
+            transform: scale(1.05);
+        }
+        .carousel-fade .carousel-inner .active {
+            opacity: 1;
+            transform: scale(1);
+            animation: carouselFade 1s ease;
+        }
+
+        /* 菜品列表样式优化 */
+        .data {
+            margin: 0 -15px;
+        }
+        .data-item-li {
+            float: left;
+            width: 25%;
+            padding: 0 15px;
+            margin-bottom: 30px;
+            list-style: none;
+            box-sizing: border-box;
+        }
+        .data-item-li div {
+            background: #fff;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            height: 100%;
+        }
+        .data-item-li div:hover {
+            transform: translateY(-5px);
+        }
+        .to-big img {
+            border-radius: 4px;
+            margin-bottom: 10px;
+            object-fit: cover;
+            width: 100%;
+            height: 200px;
+        }
+
+        /* 响应式调整 */
+        @media (min-width: 768px) {
+            /* PC端导航栏完全铺满，移除内边距 */
+            .bubble-nav {
+                padding: 0;
+            }
+            /* PC端调整导航项的左右间距，保证最后一项贴右边 */
+            .bubble-nav .nav-item:last-child {
+                margin-right: 20px;
+            }
+            .bubble-nav .nav-item:first-child {
+                margin-left: 20px;
+            }
+            /* Logo贴左边 */
+            .bubble-nav .logo {
+                margin-left: 20px;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .data-item-li {
+                width: 33.333%;
+            }
+        }
+        @media (max-width: 992px) {
+            .data-item-li {
+                width: 50%;
+            }
+        }
+        @media (max-width: 768px) {
+            /* 移动端导航调整 */
+            .bubble-nav .nav-list {
+                float: none;
+                position: absolute;
+                top: 70px;
+                left: 0;
+                right: 0;
+                background-color: #fff;
+                box-shadow: 0 5px 10px rgba(0, 0, 0, 0.1);
+                display: none;
+                padding: 0;
+                margin: 0;
+            }
+            .bubble-nav .nav-item {
+                float: none;
+                margin: 0;
+                border-bottom: 1px solid #f5f5f5;
+            }
+            .bubble-nav .nav-item > a {
+                line-height: 50px;
+                padding-left: 20px;
+            }
+            .bubble-nav .submenu {
+                position: static;
+                transform: none;
+                box-shadow: none;
+                border-radius: 0;
+                padding: 0;
+                display: none;
+            }
+            .bubble-nav .submenu::before {
+                display: none;
+            }
+            .bubble-nav .nav-item:hover .submenu {
+                top: auto;
+                opacity: 1;
+                visibility: visible;
+            }
+            .bubble-nav .submenu li a {
+                padding-left: 30px;
+            }
+            .nav-toggle {
+                display: block;
+                margin-right: 15px;
+            }
+            .nav-list.show {
+                display: block;
+            }
+            /* 移动端Logo调整 */
+            .bubble-nav .logo img {
+                height: 40px;
+            }
+
+            .data-item-li {
+                width: 100%;
+            }
+            #mycarousel .item img {
+                max-height: 250px;
+            }
+            /* 移动端轮播指示器调整 */
+            .carousel-indicators {
+                bottom: 10px;
+            }
+            .carousel-indicators li {
+                width: 8px;
+                height: 8px;
+            }
+            .carousel-indicators .active {
+                width: 20px;
+                height: 8px;
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
 </head>
 <body>
 <div id="main" class="container">
-    <div id="header">
-        <div class="row">
-            <div class="col-md-4" role="navigation">
-            </div>
-            <div class="col-md-8">
-                <ul class="nav nav-pills pull-right">
-                    <li><a th:href="@{/front/toShopCart}"> <i
-                            class="fa fa-shopping-cart" style="color: #F22E00"></i>
-                        购物车
-                    </a></li>
-                    <li class="info-a">
-                        <a th:href="@{/front/toInfo}" style="color: #F22E00" th:text="${session.currUser.name}">
-                            name
-                            <span class="glyphicon glyphicon-triangle-bottom" style="font-size: 5px;margin-left: 7px;" aria-hidden="true">
-            </span>
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a th:href="@{/front/toInfo}">账户管理</a></li>
-                            <li role="separator" class="divider"></li>
-                            <li><a th:href="@{/front/logout}" class="login-out">退出登录</a></li>
-                        </ul>
-                    </li>
+    <!-- 气泡型导航栏 -->
+    <div class="bubble-nav clearfix">
+        <!-- Logo替换为admin路径下的图片 -->
+        <a href="#" class="logo" th:href="@{/front/toMain}">
+            <img th:src="@{/admin/images/logo.png}" alt="My Canteen Logo">
+        </a>
+        <div class="nav-toggle">
+            <i class="fa fa-bars"></i>
+        </div>
+        <ul class="nav-list">
+            <li class="nav-item">
+                <a th:href="@{/front/toMain}"><i class="fa fa-home"></i> 首页</a>
+            </li>
+            <li class="nav-item">
+                <a href="javascript:;"><i class="fa fa-list"></i> 菜品分类 <i class="fa fa-angle-down"></i></a>
+                <ul class="submenu">
+                    <li><a href="javascript:;" onclick="switchCategory('菜肴')">菜肴</a></li>
+                    <li><a href="javascript:;" onclick="switchCategory('甜点')">甜点</a></li>
+                    <li><a href="javascript:;" onclick="switchCategory('主食')">主食</a></li>
+                    <li><a href="javascript:;" onclick="switchCategory('饮品')">饮品</a></li>
                 </ul>
-            </div>
-        </div>
-        <div id="header-nav">
-            <nav class="navbar navbar-default" id="header-nav-middle">
-                <div class="container-fluid">
-                    <div class="navbar-header">
-                        <button type="button" class="navbar-toggle collapsed"
-                                data-toggle="collapse"
-                                data-target="#bs-example-navbar-collapse-1"
-                                aria-expanded="false">
-                            <span class="sr-only">Toggle navigation</span> <span
-                                class="icon-bar"></span> <span class="icon-bar"></span> <span
-                                class="icon-bar"></span>
-                        </button>
-                        <a class="navbar-brand" th:href="@{/front/toMain}"><span class="logo-word">My Canteen</span></a>
-                    </div>
+            </li>
+            <li class="nav-item">
+                <a th:href="@{/front/toOrder}"><i class="fa fa-file-text"></i> 我的订单</a>
+            </li>
+            <li class="nav-item">
+                <a th:href="@{/front/toShopCart}" class="cart-icon"><i class="fa fa-shopping-cart"></i> 购物车</a>
+            </li>
+            <li class="nav-item">
+                <a href="javascript:;"><i class="fa fa-user"></i> <span th:text="${session.currUser.name}">name</span> <i class="fa fa-angle-down"></i></a>
+                <ul class="submenu">
+                    <li><a th:href="@{/front/toInfo}">账户管理</a></li>
+                    <li><a th:href="@{/front/logout}" class="login-out">退出登录</a></li>
+                </ul>
+            </li>
+        </ul>
+    </div>
 
-                    <div class="collapse navbar-collapse"
-                         id="bs-example-navbar-collapse-1">
-                        <ul class="nav navbar-nav">
-                            <li><a class="a-color" th:href="@{/front/toMain}">首页</a></li>
-                            <li><a class="a-color" th:href="@{/front/toOrder}">我的订单</a></li>
-                        </ul>
-                    </div>
-                </div>
-            </nav>
-        </div>
+    <div id="header">
         <div class="header-bottom">
-            <!-- 轮播图 -->
-            <div id="mycarousel" class="carousel slide" data-ride="carousel" style="width: 1120px; height: 250px">
-                <div class="carousel-inner">
+            <!-- 轮播图 - 添加动画效果 -->
+            <div id="mycarousel" class="carousel slide carousel-fade" data-ride="carousel" data-interval="5000">
+                <!-- 轮播内容 -->
+                <div class="carousel-inner" role="listbox">
                     <div class="item active">
-                        <img th:src="@{/frontStatic/image/banner1.jpg}" alt="" style="width: 1120px; height: 250px">
+                        <img th:src="@{/frontStatic/image/banner1.jpg}" alt="轮播图1" class="img-responsive">
+                        <!-- 可选：添加轮播文字描述 -->
+                        <div class="carousel-caption hidden-xs">
+                            <h3 style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">美味佳肴</h3>
+                            <p style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">精选食材，用心烹制</p>
+                        </div>
                     </div>
-
                     <div class="item">
-                        <img th:src="@{/frontStatic/image/banner2.jpg}" alt="" style="width: 1120px; height: 250px">
+                        <img th:src="@{/frontStatic/image/banner2.jpg}" alt="轮播图2" class="img-responsive">
+                        <div class="carousel-caption hidden-xs">
+                            <h3 style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">特色甜点</h3>
+                            <p style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">甜蜜滋味，回味无穷</p>
+                        </div>
                     </div>
                     <div class="item">
-                        <img th:src="@{/frontStatic/image/banner3.jpg}" alt="" style="width: 1120px; height: 250px">
+                        <img th:src="@{/frontStatic/image/banner3.jpg}" alt="轮播图3" class="img-responsive">
+                        <div class="carousel-caption hidden-xs">
+                            <h3 style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">健康饮品</h3>
+                            <p style="text-shadow: 0 2px 4px rgba(0,0,0,0.5);">新鲜现做，营养健康</p>
+                        </div>
                     </div>
                 </div>
 
+                <!-- 轮播指示器 -->
                 <ol class="carousel-indicators">
                     <li data-target="#mycarousel" data-slide-to="0" class="active"></li>
                     <li data-target="#mycarousel" data-slide-to="1"></li>
                     <li data-target="#mycarousel" data-slide-to="2"></li>
                 </ol>
 
-                <a class="left carousel-control" href="#mycarousel" role="button"
-                   data-slide="prev" style="display: none;">
+                <!-- 轮播控制按钮 -->
+                <a class="left carousel-control" href="#mycarousel" role="button" data-slide="prev">
                     <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
                     <span class="sr-only">Previous</span>
                 </a>
-                <a class="right carousel-control" href="#mycarousel" role="button"
-                   data-slide="next" style="display: none;">
+                <a class="right carousel-control" href="#mycarousel" role="button" data-slide="next">
                     <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
                     <span class="sr-only">Next</span>
                 </a>
@@ -101,126 +532,230 @@
             <div class="clear-float"></div>
         </div>
     </div>
+
     <div class="content">
-        <div class="module">
-            <div class="hd">
-                <h2>菜肴</h2>
-                <hr>
-            </div>
-            <div class="bd">
-                <div class="data">
-                    <ul>
-                        <li class="data-item-li" th:each="menu : ${session.menuList}" th:if="${menu.category == '菜肴'}">
-                            <div>
-                                <div class="to-big">
-                                    <a th:href="@{|/front/toDetail/${menu.menuId}|}">
-                                        <img th:src="@{|/picture/${menu.picture}|}" alt="菜品图片"
-                                             width="200" height="200"/>
-                                    </a>
+        <!-- 菜式分类标签 -->
+        <div class="category-tabs">
+            <div class="category-tab active" data-category="菜肴">菜肴</div>
+            <div class="category-tab" data-category="甜点">甜点</div>
+            <div class="category-tab" data-category="主食">主食</div>
+            <div class="category-tab" data-category="饮品">饮品</div>
+        </div>
+
+        <!-- 菜肴内容 -->
+        <div class="category-content active" id="content-菜肴">
+            <div class="module">
+                <div class="hd">
+                    <h2>菜肴</h2>
+                    <hr>
+                </div>
+                <div class="bd">
+                    <div class="data">
+                        <ul>
+                            <li class="data-item-li" th:each="menu : ${session.menuList}" th:if="${menu.category == '菜肴'}">
+                                <div>
+                                    <div class="to-big">
+                                        <a th:href="@{|/front/toDetail/${menu.menuId}|}">
+                                            <img th:src="@{|/picture/${menu.picture}|}" alt="菜品图片"/>
+                                        </a>
+                                    </div>
+                                    <p class="text-right">
+                                        <a th:href="@{|/front/toDetail/${menu.menuId}|}" th:text="${menu.name}">菜品</a>
+                                    </p>
+                                    <div class="text-right">
+                                        <b th:text="'￥' + ${menu.price}">￥00.00</b>
+                                    </div>
                                 </div>
-                                <p class="text-right">
-                                    <a th:href="@{|/front/toDetail/${menu.menuId}|}" th:text="${menu.name}">菜品</a>
-                                </p>
-                                <div class="text-right">
-                                    <b th:text="'￥' + ${menu.price}">￥00.00</b>
-                                </div>
-                            </div>
-                        </li>
-                        <div class="clear-float" style="clear: both;"></div>
-                    </ul>
+                            </li>
+                            <div class="clear-float" style="clear: both;"></div>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="module">
-            <div class="hd">
-                <h2>甜点</h2>
-                <hr>
-            </div>
-            <div class="bd">
-                <div class="data">
-                    <ul>
-                        <li class="data-item-li" th:each="menu : ${session.menuList}" th:if="${menu.category == '甜点'}">
-                            <div>
-                                <div class="to-big">
-                                    <a th:href="@{|/front/toDetail/${menu.menuId}|}">
-                                        <img th:src="@{|/picture/${menu.picture}|}" alt="菜品图片"
-                                             width="200" height="200"/>
-                                    </a>
+
+        <!-- 甜点内容 -->
+        <div class="category-content" id="content-甜点">
+            <div class="module">
+                <div class="hd">
+                    <h2>甜点</h2>
+                    <hr>
+                </div>
+                <div class="bd">
+                    <div class="data">
+                        <ul>
+                            <li class="data-item-li" th:each="menu : ${session.menuList}" th:if="${menu.category == '甜点'}">
+                                <div>
+                                    <div class="to-big">
+                                        <a th:href="@{|/front/toDetail/${menu.menuId}|}">
+                                            <img th:src="@{|/picture/${menu.picture}|}" alt="菜品图片"/>
+                                        </a>
+                                    </div>
+                                    <p class="text-right">
+                                        <a th:href="@{|/front/toDetail/${menu.menuId}|}" th:text="${menu.name}">菜品</a>
+                                    </p>
+                                    <div class="text-right">
+                                        <b th:text="'￥' + ${menu.price}">￥00.00</b>
+                                    </div>
                                 </div>
-                                <p class="text-right">
-                                    <a th:href="@{|/front/toDetail/${menu.menuId}|}" th:text="${menu.name}">菜品</a>
-                                </p>
-                                <div class="text-right">
-                                    <b th:text="'￥' + ${menu.price}">￥00.00</b>
-                                </div>
-                            </div>
-                        </li>
-                        <div class="clear-float" style="clear: both;"></div>
-                    </ul>
+                            </li>
+                            <div class="clear-float" style="clear: both;"></div>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="module">
-            <div class="hd">
-                <h2>主食</h2>
-                <hr>
-            </div>
-            <div class="bd">
-                <div class="data">
-                    <ul>
-                        <li class="data-item-li" th:each="menu : ${session.menuList}" th:if="${menu.category == '主食'}">
-                            <div>
-                                <div class="to-big">
-                                    <a th:href="@{|/front/toDetail/${menu.menuId}|}">
-                                        <img th:src="@{|/picture/${menu.picture}|}" alt="菜品图片"
-                                             width="200" height="200"/>
-                                    </a>
+
+        <!-- 主食内容 -->
+        <div class="category-content" id="content-主食">
+            <div class="module">
+                <div class="hd">
+                    <h2>主食</h2>
+                    <hr>
+                </div>
+                <div class="bd">
+                    <div class="data">
+                        <ul>
+                            <li class="data-item-li" th:each="menu : ${session.menuList}" th:if="${menu.category == '主食'}">
+                                <div>
+                                    <div class="to-big">
+                                        <a th:href="@{|/front/toDetail/${menu.menuId}|}">
+                                            <img th:src="@{|/picture/${menu.picture}|}" alt="菜品图片"/>
+                                        </a>
+                                    </div>
+                                    <p class="text-right">
+                                        <a th:href="@{|/front/toDetail/${menu.menuId}|}" th:text="${menu.name}">菜品</a>
+                                    </p>
+                                    <div class="text-right">
+                                        <b th:text="'￥' + ${menu.price}">￥00.00</b>
+                                    </div>
                                 </div>
-                                <p class="text-right">
-                                    <a th:href="@{|/front/toDetail/${menu.menuId}|}" th:text="${menu.name}">菜品</a>
-                                </p>
-                                <div class="text-right">
-                                    <b th:text="'￥' + ${menu.price}">￥00.00</b>
-                                </div>
-                            </div>
-                        </li>
-                        <div class="clear-float" style="clear: both;"></div>
-                    </ul>
+                            </li>
+                            <div class="clear-float" style="clear: both;"></div>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="module">
-            <div class="hd">
-                <h2>饮品</h2>
-                <hr>
-            </div>
-            <div class="bd">
-                <div class="data">
-                    <ul>
-                        <li class="data-item-li" th:each="menu : ${session.menuList}" th:if="${menu.category == '饮品'}">
-                            <div>
-                                <div class="to-big">
-                                    <a th:href="@{|/front/toDetail/${menu.menuId}|}">
-                                        <img th:src="@{|/picture/${menu.picture}|}" alt="菜品图片"
-                                             width="200" height="200"/>
-                                    </a>
+
+        <!-- 饮品内容 -->
+        <div class="category-content" id="content-饮品">
+            <div class="module">
+                <div class="hd">
+                    <h2>饮品</h2>
+                    <hr>
+                </div>
+                <div class="bd">
+                    <div class="data">
+                        <ul>
+                            <li class="data-item-li" th:each="menu : ${session.menuList}" th:if="${menu.category == '饮品'}">
+                                <div>
+                                    <div class="to-big">
+                                        <a th:href="@{|/front/toDetail/${menu.menuId}|}">
+                                            <img th:src="@{|/picture/${menu.picture}|}" alt="菜品图片"/>
+                                        </a>
+                                    </div>
+                                    <p class="text-right">
+                                        <a th:href="@{|/front/toDetail/${menu.menuId}|}" th:text="${menu.name}">菜品</a>
+                                    </p>
+                                    <div class="text-right">
+                                        <b th:text="'￥' + ${menu.price}">￥00.00</b>
+                                    </div>
                                 </div>
-                                <p class="text-right">
-                                    <a th:href="@{|/front/toDetail/${menu.menuId}|}" th:text="${menu.name}">菜品</a>
-                                </p>
-                                <div class="text-right">
-                                    <b th:text="'￥' + ${menu.price}">￥00.00</b>
-                                </div>
-                            </div>
-                        </li>
-                        <div class="clear-float" style="clear: both;"></div>
-                    </ul>
+                            </li>
+                            <div class="clear-float" style="clear: both;"></div>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    // 移动端导航切换
+    $(document).ready(function() {
+        // 导航切换按钮
+        $('.nav-toggle').click(function() {
+            $('.nav-list').toggleClass('show');
+        });
+
+        // 点击标签切换显示内容
+        $('.category-tab').click(function() {
+            $('.category-tab').removeClass('active');
+            $(this).addClass('active');
+            var category = $(this).data('category');
+            $('.category-content').removeClass('active');
+            $('#content-' + category).addClass('active');
+        });
+
+        // 二级菜单点击关闭（移动端）
+        $('.submenu li a').click(function() {
+            if ($(window).width() < 768) {
+                $('.nav-list').removeClass('show');
+            }
+        });
+
+        // 窗口大小变化时重新计算布局
+        $(window).resize(function() {
+            if ($(window).width() >= 768) {
+                $('.nav-list').removeClass('show');
+            }
+        });
+
+        // 轮播图触摸滑动支持（移动端）
+        $("#mycarousel").on("touchstart", function(event) {
+            var x = event.originalEvent.touches[0].clientX;
+            $(this).data("touchStartX", x);
+        });
+        $("#mycarousel").on("touchend", function(event) {
+            var x = event.originalEvent.changedTouches[0].clientX;
+            var startX = $(this).data("touchStartX");
+            if (x - startX > 50) {
+                $(this).carousel('prev');
+            } else if (x - startX < -50) {
+                $(this).carousel('next');
+            }
+        });
+
+        // 初始化轮播图，设置自动播放和动画
+        $('#mycarousel').carousel({
+            interval: 5000, // 5秒自动切换
+            pause: "hover", // 鼠标悬停暂停
+            wrap: true,     // 循环播放
+            keyboard: true  // 支持键盘方向键
+        });
+
+        // 轮播图切换时的额外动画效果
+        $('#mycarousel').on('slide.bs.carousel', function (e) {
+            // 淡出当前项
+            $(e.relatedTarget).find('img').css({
+                'opacity': 0.8,
+                'transform': 'scale(1.05)'
+            });
+        });
+        $('#mycarousel').on('slid.bs.carousel', function (e) {
+            // 淡入新项
+            $(e.relatedTarget).find('img').animate({
+                'opacity': 1,
+                'transform': 'scale(1)'
+            }, 800);
+        });
+    });
+
+    // 导航栏分类切换函数
+    function switchCategory(category) {
+        // 切换标签激活状态
+        $('.category-tab').removeClass('active');
+        $('.category-tab[data-category="' + category + '"]').addClass('active');
+        // 切换内容显示
+        $('.category-content').removeClass('active');
+        $('#content-' + category).addClass('active');
+        // 滚动到分类区域
+        $('html, body').animate({
+            scrollTop: $('.category-tabs').offset().top - 80
+        }, 500);
+    }
+</script>
 </body>
 </html>
-
-
