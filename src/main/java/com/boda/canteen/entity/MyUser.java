@@ -22,4 +22,5 @@ public class MyUser implements Serializable {
     private String telephone;
     private String department;
     private String role;
+    private String work_information;
 }
