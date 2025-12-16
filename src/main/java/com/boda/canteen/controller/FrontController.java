@@ -63,8 +63,8 @@ public class FrontController {
         LambdaQueryWrapper<Menu> queryWrapper = new LambdaQueryWrapper<>();
 
         // 获取当前时间的一周开始与一周结束
-        Date weekOfBeginTime = MyTimeUtils.getWeekOfBeginTime();
-        Date weekOfEndTime = MyTimeUtils.getWeekOfEndTime();
+        Date weekOfBeginTime = MyTimeUtils.getDayOfBeginTime();
+        Date weekOfEndTime = MyTimeUtils.getDayOfEndTime();
 
         queryWrapper.between(Menu::getCreateTime, weekOfBeginTime, weekOfEndTime)
                 .orderByDesc(Menu::getCreateTime);
@@ -97,8 +97,9 @@ public class FrontController {
      * 跳转个人信息页面
      */
     @GetMapping("/toInfo")
-    public String toInfo() {
-        return "front/information";
+    public String toInfo(HttpServletRequest request) {
+        // 重定向到用户中心页面
+        return "redirect:/front/toUserCenter";
     }
 
     /**
@@ -106,22 +107,8 @@ public class FrontController {
      */
     @GetMapping("/toOrder")
     public String toOrder(HttpServletRequest request) {
-        MyUser currUser = (MyUser) request.getSession().getAttribute("currUser");
-        Long userId = currUser.getUserId();
-        // 获取当天订单
-        // 获取当天时间
-        Date begin = DateUtil.beginOfDay(DateUtil.date());
-        Date end = DateUtil.endOfDay(DateUtil.date());
-        LambdaQueryWrapper<OrderForm> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(OrderForm::getUserId, userId);
-        queryWrapper.between(OrderForm::getOrderTime, begin, end);
-        List<OrderForm> orderList = orderFormService.list(queryWrapper);
-        // 存入session
-        request.getSession().setAttribute("orderList", orderList);
-        // 查询所有总括订单
-        List<BlanketOrder> blanketOrderList = blanketOrderService.list();
-        request.getSession().setAttribute("blanketOrderList", blanketOrderList);
-        return "front/list";
+        // 重定向到用户中心页面
+        return "redirect:/front/toUserCenter";
     }
 
     /**
@@ -151,25 +138,47 @@ public class FrontController {
      */
     @GetMapping("/toMonOrder")
     public String toMonOrder(HttpServletRequest request){
-        // 记录当前月份
-        String monDate = DateUtil.formatDate(DateUtil.date()).substring(0, 7);
-        request.getSession().setAttribute("monDate", monDate);
+        // 重定向到用户中心页面
+        return "redirect:/front/toUserCenter";
+    }
+
+    /**
+     * 跳转用户中心页面
+     */
+    @GetMapping("/toUserCenter")
+    public String toUserCenter(HttpServletRequest request){
         MyUser currUser = (MyUser) request.getSession().getAttribute("currUser");
         Long userId = currUser.getUserId();
-        // 获取时间
-        String month = monDate + "-01";
-        Date begin = MyTimeUtils.getMonthOfBeginTime(month);
-        Date end = MyTimeUtils.getMonthOfEndTime(month);
-        // 获取本月所有订单
+
+        // 加载今日订单数据
+        Date begin = DateUtil.beginOfDay(DateUtil.date());
+        Date end = DateUtil.endOfDay(DateUtil.date());
         LambdaQueryWrapper<OrderForm> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(OrderForm::getUserId, userId)
-                .between(OrderForm::getOrderTime, begin, end);
+        queryWrapper.eq(OrderForm::getUserId, userId);
+        queryWrapper.between(OrderForm::getOrderTime, begin, end);
         List<OrderForm> orderList = orderFormService.list(queryWrapper);
-        // 统计总金额
+        request.getSession().setAttribute("orderList", orderList);
+
+        // 查询所有总括订单
+        List<BlanketOrder> blanketOrderList = blanketOrderService.list();
+        request.getSession().setAttribute("blanketOrderList", blanketOrderList);
+
+        // 加载月度订单数据
+        String monDate = DateUtil.formatDate(DateUtil.date()).substring(0, 7);
+        request.getSession().setAttribute("monDate", monDate);
+        String month = monDate + "-01";
+        Date monBegin = MyTimeUtils.getMonthOfBeginTime(month);
+        Date monEnd = MyTimeUtils.getMonthOfEndTime(month);
+
+        LambdaQueryWrapper<OrderForm> monQueryWrapper = new LambdaQueryWrapper<>();
+        monQueryWrapper.eq(OrderForm::getUserId, userId)
+                .between(OrderForm::getOrderTime, monBegin, monEnd);
+        List<OrderForm> monOrderList = orderFormService.list(monQueryWrapper);
+
+        // 统计月度总金额
         Long monTotalPrice = 0L;
-        // 获取本月所有订单详情
         List<BlanketOrder> monBlanketOrderList = new ArrayList<>();
-        for (OrderForm orderForm : orderList){
+        for (OrderForm orderForm : monOrderList){
             monTotalPrice += orderForm.getOrderPrice();
             LambdaQueryWrapper<BlanketOrder> blanketOrderLambdaQueryWrapper = new LambdaQueryWrapper<>();
             blanketOrderLambdaQueryWrapper.eq(BlanketOrder::getOrderId, orderForm.getOrderId());
@@ -177,7 +186,8 @@ public class FrontController {
         }
         request.getSession().setAttribute("monBlanketOrderList", monBlanketOrderList);
         request.getSession().setAttribute("monTotalPrice", monTotalPrice);
-        return "front/monOrder";
+
+        return "front/userCenter";
     }
 
     /**
