@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>食堂时间配置管理</title>
+    <title>食堂时间配置管理 | 博达餐饮系统</title>
     <!-- 引入Layui核心CSS -->
     <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.8.18/css/layui.css">
     <!-- 引入jQuery（Layui内置jQuery，也可单独引入） -->
@@ -11,65 +11,262 @@
     <!-- 引入Layui核心JS -->
     <script src="https://cdn.staticfile.org/layui/2.8.18/layui.js"></script>
     <style>
-        /* 自定义样式 */
-        .config-container {
-            width: 90%;
-            max-width: 600px;
-            margin: 50px auto;
-            padding: 20px;
-            background-color: #fff;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        /* 全局样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
+
+        body {
+            font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* 配置容器样式优化 */
+        .config-container {
+            width: 95%;
+            max-width: 700px;
+            margin: 30px auto;
+            padding: 30px;
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+            border: 1px solid #f0f2f5;
+        }
+
+        /* 标题样式优化 */
         .config-title {
             text-align: center;
-            font-size: 18px;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f2d3d;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e8eaec;
+            position: relative;
         }
+
+        .config-title::after {
+            content: "";
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 2px;
+            background-color: #1890ff;
+        }
+
+        /* 配置项样式优化 */
         .config-item {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px dashed #f0f0f0;
+            padding: 15px 0;
+            border-bottom: 1px dashed #e8eaec;
+            transition: all 0.3s ease;
         }
+
+        .config-item:last-of-type {
+            border-bottom: none;
+        }
+
+        .config-item:hover {
+            background-color: #fafafa;
+            padding-left: 5px;
+            padding-right: 5px;
+            border-radius: 6px;
+        }
+
         .config-label {
-            font-size: 14px;
-            color: #666;
-            width: 40%;
-        }
-        .config-value {
-            font-size: 14px;
-            color: #333;
+            font-size: 15px;
+            color: #4e5969;
+            width: 35%;
             font-weight: 500;
-            width: 60%;
-            text-align: right;
         }
+
+        .config-value {
+            font-size: 15px;
+            color: #1f2d3d;
+            font-weight: 600;
+            width: 65%;
+            text-align: right;
+            padding-right: 5px;
+        }
+
+        /* 加载状态样式优化 */
         .loading {
             text-align: center;
-            padding: 50px 0;
-            color: #999;
+            padding: 60px 0;
+            color: #86909c;
         }
+
+        .loading i {
+            font-size: 32px !important;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+
+        .loading p {
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        /* 编辑按钮容器 */
         .edit-btn-container {
             text-align: center;
-            margin-top: 20px;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e8eaec;
         }
+
+        /* 表单样式优化 */
         .layui-form-item {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
+
         .layui-form-label {
             width: 120px;
+            font-size: 14px;
+            color: #4e5969;
+            font-weight: 500;
         }
+
         .layui-input-block {
             margin-left: 150px;
         }
-        /* 自定义时间输入框样式 */
+
+        /* 时间输入框样式优化 */
         .time-input {
-            font-family: monospace;
+            font-family: "Consolas", "Monaco", monospace;
+            height: 40px;
+            border-radius: 6px;
+            border: 1px solid #dcdfe6;
+            transition: all 0.3s ease;
+        }
+
+        .time-input:focus {
+            border-color: #1890ff;
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+        }
+
+        .layui-form-mid.layui-word-aux {
+            color: #86909c;
+            font-size: 12px;
+            margin-top: 8px;
+            display: block;
+        }
+
+        /* 按钮样式优化 */
+        .layui-btn {
+            border-radius: 6px;
+            height: 40px;
+            line-height: 40px;
+            padding: 0 20px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .layui-btn-normal {
+            background-color: #1890ff;
+            border-color: #1890ff;
+        }
+
+        .layui-btn-normal:hover {
+            background-color: #40a9ff;
+            border-color: #40a9ff;
+        }
+
+        .layui-btn-primary {
+            border-color: #dcdfe6;
+        }
+
+        #reload-btn {
+            margin-top: 15px !important;
+        }
+
+        /* 错误提示样式优化 */
+        #error-msg {
+            font-size: 14px;
+        }
+
+        /* 响应式适配 */
+        @media (max-width: 768px) {
+            .config-container {
+                padding: 20px 15px;
+                margin: 15px auto;
+            }
+
+            .config-title {
+                font-size: 18px;
+            }
+
+            .config-item {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 12px 0;
+            }
+
+            .config-label, .config-value {
+                width: 100%;
+                text-align: left;
+            }
+
+            .config-label {
+                margin-bottom: 5px;
+                font-size: 14px;
+            }
+
+            .config-value {
+                font-size: 14px;
+                padding-left: 5px;
+            }
+
+            .layui-form-label {
+                width: 100px;
+            }
+
+            .layui-input-block {
+                margin-left: 120px;
+            }
+
+            #edit-modal {
+                padding: 15px !important;
+            }
+
+            .layui-layer-page {
+                width: 90% !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .layui-form-label {
+                width: 90px;
+                padding: 9px 5px;
+            }
+
+            .layui-input-block {
+                margin-left: 0;
+                margin-top: 10px;
+            }
+
+            .config-title {
+                font-size: 16px;
+            }
+
+            .layui-btn {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+
+            .layui-form-item .layui-input-block button {
+                width: 48%;
+                display: inline-block;
+                margin-bottom: 0;
+            }
         }
     </style>
 </head>
@@ -79,7 +276,7 @@
     <!-- 加载中提示 -->
     <div class="loading" id="loading">
         <i class="layui-icon layui-icon-loading layui-anim layui-anim-rotate layui-anim-loop" style="font-size: 24px;"></i>
-        <p style="margin-top: 10px;">正在加载配置信息...</p>
+        <p>正在加载配置信息...</p>
     </div>
     <!-- 配置信息展示区域（初始隐藏） -->
     <div id="config-content" style="display: none;">
@@ -136,7 +333,7 @@
         </div>
         <div class="layui-form-item">
             <div class="layui-input-block">
-                <button class="layui-btn" lay-submit lay-filter="submit-config">提交修改</button>
+                <button class="layui-btn layui-btn-normal" lay-submit lay-filter="submit-config">提交修改</button>
                 <button type="reset" class="layui-btn layui-btn-primary">重置</button>
             </div>
         </div>
@@ -236,8 +433,8 @@
                         $('#meal-start-time').text(completeTimeFormat(currentConfig.mealStartTime) || '未设置');
                         $('#update-time').text(formatTime(currentConfig.updateTime));
 
-                        // 显示配置内容
-                        $('#config-content').show();
+                        // 显示配置内容并添加淡入动画
+                        $('#config-content').fadeIn(300);
                     } else {
                         // 接口返回失败
                         $('#error-msg').text(res?.msg || '加载配置信息失败（无有效数据）');
@@ -268,7 +465,7 @@
         // 打开编辑弹窗
         $('#edit-btn').click(function() {
             if (!currentConfig) {
-                layer.msg('暂无配置数据可编辑', {icon: 2});
+                layer.msg('暂无配置数据可编辑', {icon: 2, time: 2000});
                 return;
             }
 
@@ -278,15 +475,28 @@
             $('#edit-meal-start-time').val(completeTimeFormat(currentConfig.mealStartTime) || '');
 
             // 打开弹窗
-            layer.open({
+            var index = layer.open({
                 type: 1,
-                title: '修改时间配置',
+                title: '<i class="layui-icon layui-icon-set"></i> 修改时间配置',
                 area: ['550px', '350px'],
                 content: $('#edit-modal'),
                 shade: 0.3,
                 fixed: true,
-                resize: false
+                resize: false,
+                scrollbar: false,
+                success: function() {
+                    // 弹窗打开后聚焦第一个输入框
+                    $('#edit-order-deadline').focus();
+                }
             });
+
+            // 适配移动端弹窗大小
+            if ($(window).width() < 768) {
+                layer.style(index, {
+                    width: '90%',
+                    top: '10%'
+                });
+            }
         });
 
         // 提交修改表单
@@ -310,28 +520,36 @@
                 data: JSON.stringify(submitData),
                 dataType: 'json',
                 timeout: 5000,
+                beforeSend: function() {
+                    // 提交前禁用按钮防止重复提交
+                    $('button[lay-filter="submit-config"]').attr('disabled', true).text('提交中...');
+                },
                 success: function(res) {
                     if (res && res.code === 200) {
-                        layer.msg(res.msg || '修改成功', {icon: 1});
+                        layer.msg(res.msg || '修改成功', {icon: 1, time: 2000});
                         // 关闭弹窗
                         layer.closeAll('page');
                         // 重新加载数据
                         getTimeConfig();
                     } else {
-                        layer.msg(res?.msg || '修改失败', {icon: 2});
+                        layer.msg(res?.msg || '修改失败', {icon: 2, time: 2000});
                     }
                 },
                 error: function(xhr, status, error) {
                     if (xhr.status === 403) {
-                        layer.msg('无修改权限（仅经理可操作）', {icon: 5});
+                        layer.msg('无修改权限（仅经理可操作）', {icon: 5, time: 2000});
                     } else if (status === 'timeout') {
-                        layer.msg('请求超时，请重试', {icon: 5});
+                        layer.msg('请求超时，请重试', {icon: 5, time: 2000});
                     } else if (xhr.status === 400) {
-                        layer.msg('时间格式错误，请检查输入', {icon: 2});
+                        layer.msg('时间格式错误，请检查输入', {icon: 2, time: 2000});
                     } else {
-                        layer.msg('修改失败：' + error, {icon: 2});
+                        layer.msg('修改失败：' + error, {icon: 2, time: 2000});
                     }
                     console.error('更新配置失败：', error, xhr);
+                },
+                complete: function() {
+                    // 恢复按钮状态
+                    $('button[lay-filter="submit-config"]').attr('disabled', false).text('提交修改');
                 }
             });
 
@@ -341,11 +559,34 @@
 
         // 重新加载按钮点击事件
         $('#reload-btn').click(function() {
+            $(this).attr('disabled', true).text('加载中...');
             getTimeConfig();
+            setTimeout(() => {
+                $(this).attr('disabled', false).text('重新加载');
+            }, 1000);
         });
 
         // 页面加载时执行请求
-        getTimeConfig();
+        $(document).ready(function() {
+            getTimeConfig();
+
+            // 窗口大小变化时适配弹窗
+            $(window).resize(function() {
+                $('.layui-layer-page').each(function() {
+                    if ($(window).width() < 768) {
+                        $(this).css({
+                            width: '90%',
+                            top: '10%'
+                        });
+                    } else {
+                        $(this).css({
+                            width: '550px',
+                            top: '15%'
+                        });
+                    }
+                });
+            });
+        });
     });
 </script>
 </body>
