@@ -3,21 +3,25 @@ package com.boda.canteen.controller;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import org.springframework.util.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.boda.canteen.common.MyTimeUtils;
 import com.boda.canteen.common.R;
 import com.boda.canteen.entity.Menu;
 import com.boda.canteen.entity.Recipe;
+import com.boda.canteen.entity.TimeConfig;
 import com.boda.canteen.exception.CustomException;
 import com.boda.canteen.security.service.MenuService;
 import com.boda.canteen.security.service.RecipeService;
+import com.boda.canteen.security.service.TimeConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletRequest;
+
+import java.time.LocalDate;
 import java.util.Date;
 
 @Slf4j
@@ -31,6 +35,9 @@ public class MenuController {
     @Autowired
     private RecipeService recipeService;
 
+    @Autowired
+    private TimeConfigService timeConfigService; // 注入时间配置服务
+
     /**
      * 查询某个菜单接口
      */
@@ -43,23 +50,89 @@ public class MenuController {
         return menu != null ? R.success(menu) : R.fail("获取菜品信息失败");
     }
 
+//    /**
+//     * 今日菜单分页接口
+//     */
+//    @GetMapping("/pageToday")
+//    public R<Page<Menu>> getTodayMenu(
+//            @RequestParam(defaultValue = "1") int page,
+//            @RequestParam(defaultValue = "10") int limit,
+//            @RequestParam(required = false) String name) {
+//        Page<Menu> pageInfo = new Page<>(page, limit);
+//        LambdaQueryWrapper<Menu> queryWrapper = new LambdaQueryWrapper<>();
+//
+//        // 获取当天时间范围
+//        Date todayBegin = MyTimeUtils.getDayOfBeginTime();
+//        Date todayEnd = MyTimeUtils.getDayOfEndTime();
+//
+//        queryWrapper.eq(StringUtils.isNotEmpty(name), Menu::getName, name)
+//                .between(Menu::getCreateTime, todayBegin, todayEnd)
+//                .orderByDesc(Menu::getCreateTime);
+//
+//        menuService.page(pageInfo, queryWrapper);
+//        return R.success(pageInfo);
+//    }
+//
+//    /**
+//     * 明日菜单分页接口
+//     */
+//    @GetMapping("/pageTomorrow")
+//    public R<Page<Menu>> getTomorrowMenu(
+//            @RequestParam(defaultValue = "1") int page,
+//            @RequestParam(defaultValue = "10") int limit,
+//            @RequestParam(required = false) String name) {
+//        Page<Menu> pageInfo = new Page<>(page, limit);
+//        LambdaQueryWrapper<Menu> queryWrapper = new LambdaQueryWrapper<>();
+//
+//        // 获取明日时间范围
+//        Date tomorrowBegin = MyTimeUtils.getNextDayOfBeginTime();
+//        Date tomorrowEnd = MyTimeUtils.getNextDayOfEndTime();
+//
+//        queryWrapper.eq(StringUtils.isNotEmpty(name), Menu::getName, name)
+//                .between(Menu::getCreateTime, tomorrowBegin, tomorrowEnd)
+//                .orderByDesc(Menu::getCreateTime);
+//
+//        menuService.page(pageInfo, queryWrapper);
+//        return R.success(pageInfo);
+//    }
+
     /**
-     * 今日菜单分页接口
+     * 今日菜单分页接口（动态范围：根据当前时间是否超过本日orderDeadline调整）
      */
     @GetMapping("/pageToday")
     public R<Page<Menu>> getTodayMenu(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(required = false) String name) {
+        // 1. 获取数据库时间配置
+        TimeConfig timeConfig = timeConfigService.getCurrentConfig();
+        String mealStartTime = timeConfig.getMealStartTime(); // 配餐开始时间（HH:mm:ss）
+        String orderDeadline = timeConfig.getOrderDeadline(); // 订餐截止时间（HH:mm:ss）
+
+        // 2. 动态计算今日菜单时间范围
+        Date startTime, endTime;
+        LocalDate baseDate;
+        if (MyTimeUtils.isAfterTodayOrderDeadline(orderDeadline)) {
+            // 当前时间已超过本日orderDeadline → 今日菜单：本日mealStartTime ~ 明日orderDeadline
+            baseDate = MyTimeUtils.getToday();
+            startTime = MyTimeUtils.getDateWithTime(baseDate, mealStartTime); // 本日mealStartTime
+            endTime = MyTimeUtils.getDateWithTime(baseDate.plusDays(1), orderDeadline); // 明日orderDeadline
+        } else {
+            // 当前时间未超过本日orderDeadline → 今日菜单：昨日mealStartTime ~ 本日orderDeadline
+            baseDate = MyTimeUtils.getYesterday();
+            startTime = MyTimeUtils.getDateWithTime(baseDate, mealStartTime); // 昨日mealStartTime
+            endTime = MyTimeUtils.getDateWithTime(baseDate.plusDays(1), orderDeadline); // 本日orderDeadline
+        }
+
+        log.info("今日菜单时间范围：{} ~ {}",
+                DateUtil.formatDateTime(startTime),
+                DateUtil.formatDateTime(endTime));
+
+        // 3. 分页查询
         Page<Menu> pageInfo = new Page<>(page, limit);
         LambdaQueryWrapper<Menu> queryWrapper = new LambdaQueryWrapper<>();
-
-        // 获取当天时间范围
-        Date todayBegin = MyTimeUtils.getDayOfBeginTime();
-        Date todayEnd = MyTimeUtils.getDayOfEndTime();
-
-        queryWrapper.eq(StringUtils.isNotEmpty(name), Menu::getName, name)
-                .between(Menu::getCreateTime, todayBegin, todayEnd)
+        queryWrapper.eq(StringUtils.hasText(name), Menu::getName, name)
+                .between(Menu::getCreateTime, startTime, endTime)
                 .orderByDesc(Menu::getCreateTime);
 
         menuService.page(pageInfo, queryWrapper);
@@ -67,22 +140,42 @@ public class MenuController {
     }
 
     /**
-     * 明日菜单分页接口
+     * 明日菜单分页接口（动态范围：根据当前时间是否超过本日orderDeadline调整）
      */
     @GetMapping("/pageTomorrow")
     public R<Page<Menu>> getTomorrowMenu(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int limit,
             @RequestParam(required = false) String name) {
+        // 1. 获取数据库时间配置
+        TimeConfig timeConfig = timeConfigService.getCurrentConfig();
+        String mealStartTime = timeConfig.getMealStartTime(); // 配餐开始时间（HH:mm:ss）
+        String orderDeadline = timeConfig.getOrderDeadline(); // 订餐截止时间（HH:mm:ss）
+
+        // 2. 动态计算明日菜单时间范围
+        Date startTime, endTime;
+        LocalDate baseDate;
+        if (MyTimeUtils.isAfterTodayOrderDeadline(orderDeadline)) {
+            // 当前时间已超过本日orderDeadline → 明日菜单：明日mealStartTime ~ 后日orderDeadline
+            baseDate = MyTimeUtils.getTomorrow();
+            startTime = MyTimeUtils.getDateWithTime(baseDate, mealStartTime); // 明日mealStartTime
+            endTime = MyTimeUtils.getDateWithTime(baseDate.plusDays(1), orderDeadline); // 后日orderDeadline
+        } else {
+            // 当前时间未超过本日orderDeadline → 明日菜单：本日mealStartTime ~ 明日orderDeadline
+            baseDate = MyTimeUtils.getToday();
+            startTime = MyTimeUtils.getDateWithTime(baseDate, mealStartTime); // 本日mealStartTime
+            endTime = MyTimeUtils.getDateWithTime(baseDate.plusDays(1), orderDeadline); // 明日orderDeadline
+        }
+
+        log.info("明日菜单查询时间范围：{} ~ {}",
+                DateUtil.formatDateTime(startTime),
+                DateUtil.formatDateTime(endTime));
+
+        // 3. 分页查询
         Page<Menu> pageInfo = new Page<>(page, limit);
         LambdaQueryWrapper<Menu> queryWrapper = new LambdaQueryWrapper<>();
-
-        // 获取明日时间范围
-        Date tomorrowBegin = MyTimeUtils.getNextDayOfBeginTime();
-        Date tomorrowEnd = MyTimeUtils.getNextDayOfEndTime();
-
-        queryWrapper.eq(StringUtils.isNotEmpty(name), Menu::getName, name)
-                .between(Menu::getCreateTime, tomorrowBegin, tomorrowEnd)
+        queryWrapper.eq(StringUtils.hasText(name), Menu::getName, name)
+                .between(Menu::getCreateTime, startTime, endTime)
                 .orderByDesc(Menu::getCreateTime);
 
         menuService.page(pageInfo, queryWrapper);
@@ -90,7 +183,7 @@ public class MenuController {
     }
 
     /**
-     * 添加菜单接口（默认添加到明日菜单）
+     * 添加菜单接口（默认添加到明日菜单，时间范围匹配查询逻辑）
      */
     @PreAuthorize("hasRole('manager')")
     @PostMapping("/add/{recipeId}")
@@ -105,27 +198,49 @@ public class MenuController {
         }
 
         String name = recipe.getName();
-        // 明日时间范围
-        Date tomorrowBegin = MyTimeUtils.getNextDayOfBeginTime();
-        Date tomorrowEnd = MyTimeUtils.getNextDayOfEndTime();
 
-        // 检查明日是否已存在该菜品
+        // 1. 获取数据库时间配置
+        TimeConfig timeConfig = timeConfigService.getCurrentConfig();
+        String mealStartTime = timeConfig.getMealStartTime(); // 配餐开始时间
+        String orderDeadline = timeConfig.getOrderDeadline(); // 订餐截止时间
+
+        // 2. 计算明日菜单时间范围（和查询接口逻辑一致）
+        Date tomorrowMenuBegin, tomorrowMenuEnd;
+        LocalDate baseDate;
+        if (MyTimeUtils.isAfterTodayOrderDeadline(orderDeadline)) {
+            // 当前时间已超本日截止 → 明日菜单：明日mealStartTime ~ 后日orderDeadline
+            baseDate = MyTimeUtils.getTomorrow();
+            tomorrowMenuBegin = MyTimeUtils.getDateWithTime(baseDate, mealStartTime);
+            tomorrowMenuEnd = MyTimeUtils.getDateWithTime(baseDate.plusDays(1), orderDeadline);
+        } else {
+            // 当前时间未超本日截止 → 明日菜单：本日mealStartTime ~ 明日orderDeadline
+            baseDate = MyTimeUtils.getToday();
+            tomorrowMenuBegin = MyTimeUtils.getDateWithTime(baseDate, mealStartTime);
+            tomorrowMenuEnd = MyTimeUtils.getDateWithTime(baseDate.plusDays(1), orderDeadline);
+        }
+
+        log.info("明日菜单时间范围：{} ~ {}",
+                DateUtil.formatDateTime(tomorrowMenuBegin),
+                DateUtil.formatDateTime(tomorrowMenuEnd));
+
+        // 3. 检查该时间范围内是否已存在该菜品
         LambdaQueryWrapper<Menu> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Menu::getName, name)
-                .between(Menu::getCreateTime, tomorrowBegin, tomorrowEnd);
+                .between(Menu::getCreateTime, tomorrowMenuBegin, tomorrowMenuEnd);
         Menu isExist = menuService.getOne(queryWrapper);
 
         if (isExist != null) {
             return R.fail("当前菜品已添加到明日菜单");
         }
 
+        // 4. 构建菜单对象（createTime设为明日菜单起始时间）
         Menu menu = new Menu();
         menu.setName(recipe.getName());
         menu.setCategory(recipe.getCategory());
         menu.setPicture(recipe.getPicture());
         menu.setUnit(recipe.getUnit());
         menu.setPrice(recipe.getPrice());
-        menu.setCreateTime(tomorrowBegin); // 默认为明日0点
+        menu.setCreateTime(tomorrowMenuBegin); // 匹配明日菜单起始时间
 
         boolean res = menuService.save(menu);
         return res ? R.success("添加明日菜单成功") : R.fail("添加明日菜单失败");
