@@ -51,21 +51,44 @@ public class OrderController {
      */
     @PostMapping("/submit")
     public R<String> submit(@RequestBody OrderForm orderForm, HttpServletRequest request){
-        // 获取当前用户的id
+        // 1. 空值校验：防止session中用户信息为空
         MyUser currUser = (MyUser) request.getSession().getAttribute("currUser");
+        if (currUser == null || currUser.getUserId() == null) {
+            throw new CustomException("用户未登录，请先登录");
+        }
+
+        // 2. 获取用户ID（只定义一次）
         Long userId = currUser.getUserId();
 
-        // 获取当前用户的购物车信息
+        // 3. 检查当前用户当天是否已提交过订单
+        Date begin = DateUtil.beginOfDay(DateUtil.date());
+        Date end = DateUtil.endOfDay(DateUtil.date());
+        LambdaQueryWrapper<OrderForm> orderQueryWrapper = new LambdaQueryWrapper<>();
+        orderQueryWrapper.eq(OrderForm::getUserId, userId)
+                .between(OrderForm::getOrderTime, begin, end);
+        long existingOrderCount = orderFormService.count(orderQueryWrapper);
+        if (existingOrderCount > 0) {
+            throw new CustomException("每个员工每天只能生成一张订单");
+        }
+
+        // ========== 关键修复：删除了重复定义的 Long userId = currUser.getUserId(); ==========
+
+        // 4. 获取当前用户的购物车信息
         LambdaQueryWrapper<ShopCart> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(ShopCart::getUserId, userId);
         List<ShopCart> shopCartList = shopCartService.list(queryWrapper);
 
-        // 记录当前时间
+        // 5. 校验购物车是否为空
+        if (shopCartList == null || shopCartList.isEmpty()) {
+            throw new CustomException("购物车为空，无法提交订单");
+        }
+
+        // 6. 记录当前时间
         Date now = DateUtil.date();
 
-        // 补齐订单信息
-        // 定制id
-        long orderId = RandomUtil.randomInt(1000, Integer.MAX_VALUE);
+        // 7. 补齐订单信息
+        // 优化：使用更规范的订单ID生成方式（避免重复）
+        long orderId = RandomUtil.randomLong(100000L, 999999999999L);
         orderForm.setOrderId(orderId);
         orderForm.setUserId(userId);
         orderForm.setName(currUser.getUsername());
@@ -73,32 +96,47 @@ public class OrderController {
         orderForm.setTelephone(currUser.getTelephone());
 //        orderForm.setWorkInformation(currUser.getWork_information());
 
-        // 将订单信息加入订单中并将购物车信息加入总括订单
+        // 8. 保存主订单（建议加事务，防止部分保存失败）
         boolean res = orderFormService.save(orderForm);
-        if (!res) throw new CustomException("订单加入失败");
-
-        for (ShopCart sc : shopCartList) {
-            BlanketOrder blanketOrder = new BlanketOrder();
-            blanketOrder.setName(sc.getName());
-            blanketOrder.setUnit(sc.getUnit());
-            blanketOrder.setWeight(sc.getWeight());
-            blanketOrder.setPrice(sc.getPrice());
-            blanketOrder.setTotalPrice(sc.getTotalPrice());
-//            blanketOrder.setWorkInformation(sc.getWorkInformation());
-            blanketOrder.setOrderId(orderId);
-            blanketOrder.setCreateTime(now);
-            boolean ans = blanketOrderService.save(blanketOrder);
-            if (!ans) throw new CustomException("订单加入失败");
+        if (!res) {
+            log.error("用户{}提交订单失败：主订单保存失败", userId);
+            throw new CustomException("订单提交失败");
         }
 
-        // 清空当前用户的购物车
+        // 9. 保存订单明细
+        try {
+            for (ShopCart sc : shopCartList) {
+                BlanketOrder blanketOrder = new BlanketOrder();
+                blanketOrder.setName(sc.getName());
+                blanketOrder.setUnit(sc.getUnit());
+                blanketOrder.setWeight(sc.getWeight());
+                blanketOrder.setPrice(sc.getPrice());
+                blanketOrder.setTotalPrice(sc.getTotalPrice());
+//                blanketOrder.setWorkInformation(sc.getWorkInformation());
+                blanketOrder.setOrderId(orderId);
+                blanketOrder.setCreateTime(now);
+                boolean ans = blanketOrderService.save(blanketOrder);
+                if (!ans) {
+                    throw new CustomException("订单明细保存失败：" + sc.getName());
+                }
+            }
+        } catch (Exception e) {
+            // 回滚：如果明细保存失败，删除已保存的主订单
+            orderFormService.removeById(orderId);
+            log.error("用户{}订单明细保存失败，已回滚主订单", userId, e);
+            throw new CustomException("订单提交失败：" + e.getMessage());
+        }
+
+        // 10. 清空当前用户的购物车
         LambdaQueryWrapper<ShopCart> shopCartLambdaQueryWrapper = new LambdaQueryWrapper<>();
         shopCartLambdaQueryWrapper.eq(ShopCart::getUserId, userId);
         boolean b = shopCartService.remove(shopCartLambdaQueryWrapper);
 
         if (b) {
+            log.info("用户{}订单提交成功，订单号：{}", userId, orderId);
             return R.success("订单提交成功");
-        }else {
+        } else {
+            log.warn("用户{}订单提交成功，但购物车清空失败，订单号：{}", userId, orderId);
             return R.fail("订单提交成功，购物车清空失败");
         }
     }
