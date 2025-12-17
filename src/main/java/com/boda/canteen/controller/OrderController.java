@@ -21,6 +21,7 @@ import com.boda.canteen.security.service.OrderFormService;
 import com.boda.canteen.security.service.ShopCartService;
 import io.jsonwebtoken.io.IOException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.usermodel.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import cn.hutool.poi.excel.ExcelUtil;
@@ -70,6 +71,7 @@ public class OrderController {
         orderForm.setName(currUser.getUsername());
         orderForm.setOrderTime(now);
         orderForm.setTelephone(currUser.getTelephone());
+//        orderForm.setWorkInformation(currUser.getWork_information());
 
         // 将订单信息加入订单中并将购物车信息加入总括订单
         boolean res = orderFormService.save(orderForm);
@@ -82,6 +84,7 @@ public class OrderController {
             blanketOrder.setWeight(sc.getWeight());
             blanketOrder.setPrice(sc.getPrice());
             blanketOrder.setTotalPrice(sc.getTotalPrice());
+//            blanketOrder.setWorkInformation(sc.getWorkInformation());
             blanketOrder.setOrderId(orderId);
             blanketOrder.setCreateTime(now);
             boolean ans = blanketOrderService.save(blanketOrder);
@@ -200,79 +203,121 @@ public class OrderController {
         }
     }
 
+
+    private CellStyle createBorderStyle(ExcelWriter writer) {
+        Workbook workbook = writer.getWorkbook();
+        CellStyle style = workbook.createCellStyle();
+
+        style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+
+        return style;
+    }
+
     /**
      * 配送员批量打印功能
      */
     @GetMapping("/exportExcel/{orderIds}")
     public void printByBatchWithCaterer(@PathVariable String orderIds,
                                         HttpServletResponse response) {
+
         List<OrderForm> orders = orderFormService.list(
                 new LambdaQueryWrapper<OrderForm>()
                         .in(OrderForm::getOrderId, orderIds.split(","))
         );
-
-        if (orders.isEmpty()) {
-            return;
-        }
+        if (orders.isEmpty()) return;
 
         try (ExcelWriter writer = ExcelUtil.getWriter()) {
 
-            int rowIndex = 0; // ⭐ 核心：当前写到第几行
+            CellStyle borderStyle = createBorderStyle(writer);
+            int rowIndex = 0;
 
             for (OrderForm o : orders) {
 
-                writer.setCurrentRow(rowIndex);
-                writer.merge(5, "订单信息");
+                // 顶部信息（合并0-5列，保持整体宽度）
+                writer.merge(rowIndex, rowIndex, 0, 5,
+                        "员工：" + o.getName() + "        联系电话：" + o.getTelephone(), false);
+                // 给顶部合并单元格设置边框（可选，保持样式统一）
+                writer.getCell(0, rowIndex).setCellStyle(borderStyle);
+                rowIndex++;
 
-                Map<String, Object> orderMap = new LinkedHashMap<>();
-                orderMap.put("订单编号", o.getOrderId());
-                orderMap.put("用户名", o.getName());
-                orderMap.put("电话", o.getTelephone());
-                orderMap.put("下单时间", DateUtil.format(o.getOrderTime(), "HH:mm:ss"));
-                orderMap.put("", "");
-                orderMap.put("订单金额", o.getOrderPrice());
+                writer.merge(rowIndex, rowIndex, 0, 5,
+                        "工位信息：" + o.getName(), false);
+                writer.getCell(0, rowIndex).setCellStyle(borderStyle);
+                rowIndex++;
 
-                writer.writeRow(orderMap.keySet(), false); // 表头
-                writer.writeRow(orderMap.values(), false); // 数据
+                //  菜品表头（合并列实现占格）
+                // 菜名：合并0、1、2列（占3格）
+                writer.merge(rowIndex, rowIndex, 0, 2, "菜名", false);
+                // 单位：单独3列（过渡列）
+                writer.writeCellValue(3, rowIndex, "单位");
+                // 分量：合并4、5列（占2格）
+                writer.merge(rowIndex, rowIndex, 4, 5, "分量", false);
 
-                rowIndex += 3; // 表头 + 数据 + 空行
+                // 给表头所有列设置边框样式
+                // 菜名合并列（0-2）：设置0列样式即可（合并单元格样式以首列为准）
+                writer.getCell(0, rowIndex).setCellStyle(borderStyle);
+                // 单位列（3）
+                writer.getCell(3, rowIndex).setCellStyle(borderStyle);
+                // 分量合并列（4-5）：设置4列样式即可
+                writer.getCell(4, rowIndex).setCellStyle(borderStyle);
+                rowIndex++;
 
+                // 菜品数据（和表头合并列对应）
                 List<BlanketOrder> items = blanketOrderService.list(
                         new LambdaQueryWrapper<BlanketOrder>()
                                 .eq(BlanketOrder::getOrderId, o.getOrderId())
                 );
 
-                // 菜品表头
-                writer.setCurrentRow(rowIndex);
-                writer.writeRow(
-                        Arrays.asList("菜品名称", "计量单位", "数量", "单价", "总计", "下单时间"),
-                        false
-                );
-                rowIndex++;
-
-                // 菜品数据
                 for (BlanketOrder bo : items) {
-                    writer.setCurrentRow(rowIndex);
-                    writer.writeRow(Arrays.asList(
-                            bo.getName(),
-                            bo.getUnit(),
-                            bo.getWeight(),
-                            bo.getPrice(),
-                            bo.getTotalPrice(),
-                            DateUtil.format(bo.getCreateTime(), "HH:mm:ss")
-                    ), false);
+                    // 菜名：合并0-2列写入（占3格）
+                    writer.merge(rowIndex, rowIndex, 0, 2, bo.getName(), false);
+                    // 单位：3列单独写入
+                    writer.writeCellValue(3, rowIndex, bo.getUnit());
+                    // 分量：合并4-5列写入（占2格）
+                    writer.merge(rowIndex, rowIndex, 4, 5, bo.getWeight(), false);
+
+                    // 给数据行设置边框样式
+                    writer.getCell(0, rowIndex).setCellStyle(borderStyle); // 菜名合并列
+                    writer.getCell(3, rowIndex).setCellStyle(borderStyle); // 单位列
+                    writer.getCell(4, rowIndex).setCellStyle(borderStyle); // 分量合并列
                     rowIndex++;
                 }
 
-                rowIndex += 2; // ⭐ 关键：订单之间空两行
+                // 补空行（保持票据高度，和表头列结构一致）
+                // 补一行空行，按合并列结构填充空值+边框
+                writer.merge(rowIndex, rowIndex, 0, 2, "", false); // 菜名列空值
+                writer.writeCellValue(3, rowIndex, ""); // 单位列空值
+                writer.merge(rowIndex, rowIndex, 4, 5, "", false); // 分量列空值
+                // 设置空行边框
+                writer.getCell(0, rowIndex).setCellStyle(borderStyle);
+                writer.getCell(3, rowIndex).setCellStyle(borderStyle);
+                writer.getCell(4, rowIndex).setCellStyle(borderStyle);
+                rowIndex++;
+
+                // 底部信息
+                writer.merge(rowIndex, rowIndex, 0, 5,
+                        "送餐员：XXX        打印时间：" +
+                                DateUtil.format(new Date(), "yyyy-MM-dd HH:mm:ss"),
+                        false);
+                writer.getCell(0, rowIndex).setCellStyle(borderStyle);
+                rowIndex += 2;
+
+                // 订单分隔
+                rowIndex++; // 空一行，防止订单粘连
             }
 
+            // 响应配置
             response.setContentType("application/vnd.ms-excel;charset=utf-8");
             response.setHeader("Content-Disposition",
-                    "attachment;filename=order_batch.xls");
-            ServletOutputStream out = response.getOutputStream();
-            writer.flush(out, true);
-            IoUtil.close(out);
+                    "attachment;filename=送餐单批量.xls");
+
+            writer.flush(response.getOutputStream(), true);
 
         } catch (Exception e) {
             e.printStackTrace();
