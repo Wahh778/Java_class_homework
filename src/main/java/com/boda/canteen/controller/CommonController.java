@@ -41,9 +41,17 @@ public class CommonController {
 
         // 转储文件
         try {
-            // basePath使用绝对路径指定存储位置
-            String basePath = "D:\\springbootwork\\2\\canteen\\picture\\";
-            file.transferTo(new File(basePath + fileName));
+            // 1. 补全路径分隔符（\），避免拼接错误
+            String basePath = "D:\\canteen\\Java_class_homework\\picture\\";
+            // 2. 拼接完整绝对路径
+            File destFile = new File(basePath + fileName);
+            // 3. 确保父目录存在（关键：如果picture文件夹不存在，自动创建）
+            if (!destFile.getParentFile().exists()) {
+                destFile.getParentFile().mkdirs();
+            }
+            // 4. 写入文件（此时transferTo会识别绝对路径，不再走Tomcat临时目录）
+            file.transferTo(destFile);
+            System.out.println("文件成功保存到：" + destFile.getAbsolutePath());
         } catch (IOException e) {
             e.printStackTrace();
         }
