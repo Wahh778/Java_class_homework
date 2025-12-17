@@ -34,83 +34,172 @@
             padding: 0;
             box-sizing: border-box;
         }
+
+        /* 全局背景样式 - 玻璃效果基础 */
         body {
-            background-color: #f5f5f5;
-            font-family: 'Roboto', sans-serif;
+            background: #000000 url(/admin/images/bg.jpg) center center fixed;
+            background-size: cover;
+            color: #e0e0e0;
+            font-family: 'Microsoft Yahei', 'PingFang SC', Arial, sans-serif;
+            line-height: 1.5;
+            position: relative;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
         }
 
-        /* 按钮样式优化 */
+        /* 全局背景遮罩层 - 增强层次感 */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: -1;
+        }
+
+        #main.container {
+            width: 100% !important;
+            max-width: 100% !important;
+            padding: 0;
+            margin: 0;
+            background: transparent;
+        }
+
+        /* ========== 按钮样式深度优化 ========== */
         .templatemo-blue-button {
-            background-color: #39ADB4;
-            border: none;
-            color: white;
-            padding: 8px 20px;
-            border-radius: 6px;
+            background: linear-gradient(135deg, rgba(57, 173, 180, 0.9), rgba(45, 140, 146, 0.8)) !important;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white !important;
+            padding: 10px 24px !important;
+            border-radius: 8px !important;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            font-weight: 500 !important;
+            font-size: 14px !important;
+            box-shadow: 0 4px 15px rgba(57, 173, 180, 0.2) !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 8px !important;
+            min-width: 120px !important;
+            height: 44px !important;
         }
+
         .templatemo-blue-button:hover {
-            background-color: #2d8c92;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            background: linear-gradient(135deg, rgba(57, 173, 180, 1), rgba(45, 140, 146, 0.95)) !important;
+            transform: translateY(-3px) !important;
+            box-shadow: 0 8px 25px rgba(57, 173, 180, 0.4) !important;
+            border-color: rgba(255, 255, 255, 0.3) !important;
         }
-        .no-border {
-            border: 0 solid transparent !important;
+
+        .templatemo-blue-button:active {
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 15px rgba(57, 173, 180, 0.3) !important;
         }
+
+        .templatemo-blue-button i {
+            font-size: 16px !important;
+            margin-right: 0 !important;
+        }
+
         .finish-btn {
-            background-color: #e65b0e !important;
-        }
-        .font-color {
-            color: #00BBD6 !important;
+            background: linear-gradient(135deg, rgba(230, 91, 14, 0.9), rgba(200, 78, 12, 0.8)) !important;
+            box-shadow: 0 4px 15px rgba(230, 91, 14, 0.2) !important;
         }
 
-        /* 标签页样式 */
+        .finish-btn:hover {
+            background: linear-gradient(135deg, rgba(230, 91, 14, 1), rgba(200, 78, 12, 0.95)) !important;
+            box-shadow: 0 8px 25px rgba(230, 91, 14, 0.4) !important;
+        }
+
+        /* 模态框按钮优化 */
+        .modal-footer .btn {
+            padding: 8px 20px !important;
+            border-radius: 6px !important;
+            font-weight: 500 !important;
+            transition: all 0.2s ease !important;
+            border: 1px solid transparent !important;
+        }
+
+        .modal-footer .btn-default {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border-color: rgba(255, 255, 255, 0.2) !important;
+            color: #e0e0e0 !important;
+        }
+
+        .modal-footer .btn-default:hover {
+            background: rgba(255, 255, 255, 0.15) !important;
+            border-color: rgba(255, 255, 255, 0.3) !important;
+        }
+
+        .modal-footer .btn-primary {
+            background: linear-gradient(135deg, #39ADB4, #2d8c92) !important;
+            border-color: rgba(255, 255, 255, 0.2) !important;
+            color: white !important;
+        }
+
+        .modal-footer .btn-primary:hover {
+            background: linear-gradient(135deg, #2d8c92, #24747a) !important;
+            box-shadow: 0 4px 12px rgba(57, 173, 180, 0.3) !important;
+        }
+
+        /* 标签页样式优化 */
         .tab-content {
-            min-height: 500px;
-            padding: 20px;
+            min-height: calc(100% - 20px);
+            padding: 25px;
         }
 
-        /* ========== 核心修复：顶部全黑通栏始终全屏 ========== */
+        /* ========== 页面布局优化 ========== */
         .demo-layout {
             position: relative;
             overflow: hidden;
             height: 100vh;
             display: flex;
             flex-direction: column;
+            background: transparent !important;
         }
 
-        /* 顶部header - 彻底全屏，永不收缩 */
+        /* 顶部header - 优化布局 */
         .demo-header {
-            background-color: #121212 !important; /* 纯黑底色 */
+            background: rgba(18, 18, 18, 0.9) !important;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             color: #e0e0e0 !important;
-            width: 100% !important; /* 强制全屏宽度 */
-            margin-left: 0 !important; /* 移除左侧边距限制 */
+            width: 100% !important;
+            margin-left: 0 !important;
             left: 0 !important;
             right: 0 !important;
-            transition: none !important; /* 取消过渡，始终全屏 */
+            transition: none !important;
             z-index: 9998 !important;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.5);
             height: 64px !important;
-            position: fixed !important; /* 固定定位，全屏显示 */
+            position: fixed !important;
         }
+
         .mdl-layout-title {
             color: #ffffff !important;
-            padding-left: 260px !important; /* 初始避开侧边栏宽度 */
+            padding-left: 260px !important;
             font-weight: 500;
             font-size: 18px;
             transition: padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
         }
-        /* 侧边栏收起时，标题左移 */
+
         .demo-layout.collapsed .mdl-layout-title {
-            padding-left: 80px !important; /* 适配收起的侧边栏 */
+            padding-left: 80px !important;
         }
+
         .mdl-layout__header-row {
             height: 64px !important;
             align-items: center;
             width: 100% !important;
+            padding: 0 20px !important;
         }
 
-        /* 折叠按钮 - 悬浮优化+顶层 */
+        /* 折叠按钮 - 优化 */
         .sidebar-toggle {
             position: absolute;
             top: 17px;
@@ -118,78 +207,94 @@
             width: 30px;
             height: 30px;
             border-radius: 50%;
-            background-color: #212121;
+            background: rgba(33, 33, 33, 0.9) !important;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.1);
             color: #39ADB4;
             text-align: center;
             line-height: 30px;
             cursor: pointer;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+            box-shadow: 0 3px 15px rgba(0,0,0,0.4);
             z-index: 10000 !important;
             transition: all 0.3s ease;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .sidebar-toggle:hover {
-            background-color: #39ADB4;
-            color: #ffffff;
-            transform: scale(1.1);
-            box-shadow: 0 4px 12px rgba(57, 173, 180, 0.4);
         }
 
-        /* 侧导航容器 - 置顶覆盖header左侧，视觉一体 */
+        .sidebar-toggle:hover {
+            background: rgba(57, 173, 180, 0.9) !important;
+            color: #ffffff;
+            transform: scale(1.1);
+            box-shadow: 0 4px 20px rgba(57, 173, 180, 0.5);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* 侧导航容器 - 优化布局 */
         .demo-drawer {
             position: fixed !important;
-            top: 0 !important; /* 顶部对齐，覆盖header左侧 */
+            top: 0 !important;
             bottom: 0;
             left: 0;
-            background-color: #121212 !important;
-            border-right: 1px solid rgba(255,255,255,0.08) !important;
-            border-radius: 0 !important; /* 取消圆角，无缝衔接 */
-            box-shadow: 2px 0 15px rgba(0,0,0,0.5) !important;
+            background: rgba(18, 18, 18, 0.95) !important;
+            backdrop-filter: blur(12px);
+            border-right: 1px solid rgba(255,255,255,0.1) !important;
+            border-radius: 0 !important;
+            box-shadow: 2px 0 20px rgba(0,0,0,0.6) !important;
             transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
             overflow: hidden;
             width: 240px !important;
-            z-index: 9999 !important; /* 高于header，覆盖左侧 */
-            padding-top: 64px; /* 与header高度一致，顶部留白 */
+            z-index: 9999 !important;
+            padding-top: 64px;
         }
+
         .demo-drawer.collapsed {
             width: 60px !important;
         }
 
-        /* Logo容器 - 垂直居中+全黑背景 */
+        /* Logo容器 - 优化 */
         .demo-drawer-header {
-            padding: 25px 0 !important;
+            padding: 20px 0 !important;
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
-            background-color: #121212 !important; /* 与侧边栏同色，无缝 */
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            margin-top: 0 !important; /* 取消之前的margin-top */
+            background: rgba(18, 18, 18, 0.8) !important;
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            margin-top: 0 !important;
         }
+
         .logo-img {
             width: 80px;
             height: auto;
             transition: all 0.3s ease;
             border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
         }
+
         .demo-drawer.collapsed .logo-img {
             width: 40px;
         }
 
-        /* 导航列表 - 间距优化+交互增强 */
+        /* 导航列表 - 布局优化 */
         .demo-navigation {
-            background-color: #121212 !important;
+            background: transparent !important;
             padding: 10px 0;
-            height: calc(100% - 110px);
+            height: calc(100% - 100px);
             overflow-y: auto;
         }
+
         .demo-navigation::-webkit-scrollbar {
             width: 4px;
         }
+
         .demo-navigation::-webkit-scrollbar-thumb {
-            background-color: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.2);
             border-radius: 2px;
         }
+
+        .demo-navigation::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.3);
+        }
+
         .demo-navigation .mdl-navigation__link {
             padding: 12px 20px !important;
             border-radius: 8px;
@@ -201,27 +306,32 @@
             font-size: 14px;
             display: flex;
             align-items: center;
+            background: rgba(0,0,0,0.2);
+            backdrop-filter: blur(4px);
         }
+
         .demo-navigation .mdl-navigation__link i {
             margin-right: 12px !important;
             font-size: 20px;
             color: #999999;
         }
-        /* 导航激活态 */
+
         .demo-navigation .mdl-navigation__link.active {
-            background-color: rgba(57, 173, 180, 0.2) !important;
+            background: rgba(57, 173, 180, 0.2) !important;
             border-left: 3px solid #39ADB4;
             color: #ffffff !important;
         }
+
         .demo-navigation .mdl-navigation__link.active i {
             color: #39ADB4;
         }
-        /* 导航hover态 */
+
         .demo-navigation .mdl-navigation__link:hover {
-            background-color: rgba(255,255,255,0.08) !important;
+            background: rgba(255,255,255,0.1) !important;
             color: #ffffff !important;
             transform: translateX(3px);
         }
+
         .demo-navigation .mdl-navigation__link:hover i {
             color: #39ADB4;
         }
@@ -230,23 +340,26 @@
         .demo-drawer.collapsed .mdl-navigation__link span {
             display: none;
         }
+
         .demo-drawer.collapsed .mdl-navigation__link {
             text-align: center;
             padding: 12px 0 !important;
             justify-content: center;
         }
+
         .demo-drawer.collapsed .mdl-navigation__link i {
             margin: 0 !important;
             color: #cccccc !important;
         }
 
-        /* 悬浮提示 - 优化样式 */
+        /* 悬浮提示 - 优化 */
         .mdl-navigation__link .tooltip {
             position: absolute;
             left: 70px;
             top: 50%;
             transform: translateY(-50%);
-            background-color: #212121;
+            background: rgba(33, 33, 33, 0.95);
+            backdrop-filter: blur(8px);
             color: #ffffff;
             padding: 6px 12px;
             border-radius: 4px;
@@ -254,9 +367,10 @@
             display: none;
             z-index: 10001 !important;
             white-space: nowrap;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+            box-shadow: 0 3px 15px rgba(0,0,0,0.4);
             border: 1px solid rgba(255,255,255,0.1);
         }
+
         .mdl-navigation__link .tooltip::after {
             content: '';
             position: absolute;
@@ -265,93 +379,269 @@
             transform: translateY(-50%);
             border-width: 5px 5px 5px 0;
             border-style: solid;
-            border-color: transparent #212121 transparent transparent;
+            border-color: transparent rgba(33, 33, 33, 0.95) transparent transparent;
         }
+
         .demo-drawer.collapsed .mdl-navigation__link:hover .tooltip {
             display: block;
         }
 
-        /* 内容区域 - 适配+优化 */
+        /* 内容区域 - 布局优化 */
         .mdl-layout__content {
             margin-left: 240px !important;
-            margin-top: 64px !important; /* 避开header高度 */
+            margin-top: 64px !important;
             transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
             padding: 20px;
-            background-color: #f5f5f5;
+            background: transparent !important;
             height: calc(100vh - 64px);
             overflow-y: auto;
         }
+
         .demo-layout.collapsed .mdl-layout__content {
             margin-left: 60px !important;
         }
+
         .demo-content {
             padding: 0;
+            width: 100%;
         }
+
         .demo-charts {
-            background-color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            padding: 20px;
+            background: rgba(255, 255, 255, 0.08) !important;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            padding: 25px;
             margin-bottom: 20px;
+            width: 100%;
         }
 
         /* 表格样式优化 */
         .table {
             margin-bottom: 15px;
-        }
-        .table th {
-            font-weight: 500;
-            color: #333;
-            border-bottom: 2px solid #eee;
-        }
-        .table td {
-            color: #666;
-            border-bottom: 1px solid #eee;
-        }
-        h3 {
-            color: #222;
-            font-weight: 500;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #eee;
+            background: transparent !important;
+            width: 100%;
         }
 
-        /* 模态框样式优化 */
+        .table th {
+            font-weight: 500;
+            color: #e0e0e0 !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+            padding: 12px 8px !important;
+        }
+
+        .table td {
+            color: #cccccc !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+            padding: 12px 8px !important;
+        }
+
+        h3 {
+            color: #ffffff !important;
+            font-weight: 500;
+            margin-bottom: 25px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 20px;
+        }
+
+        /* ========== 修改密码模态框 - 右侧页面居中样式 ========== */
+        #update-Psw {
+            /* 确保模态框在内容区域居中，不是整个屏幕 */
+            z-index: 1050;
+        }
+
+        #update-Psw .modal-dialog {
+            /* 相对于右侧内容区域居中 */
+            position: fixed;
+            top: 50%;
+            left: calc(50% + 120px); /* 偏移量适配侧边栏宽度 */
+            transform: translate(-50%, -50%);
+            margin: 0;
+            width: 90%;
+            max-width: 500px;
+            z-index: 1051;
+        }
+
+        /* 侧边栏折叠时调整模态框位置 */
+        .demo-layout.collapsed #update-Psw .modal-dialog {
+            left: calc(50% + 30px); /* 适配折叠后的侧边栏宽度 */
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            #update-Psw .modal-dialog {
+                left: 50% !important;
+                width: 95%;
+                max-width: 400px;
+            }
+        }
+
         .modal-content {
-            border-radius: 8px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-            border: none;
+            background: rgba(18, 18, 18, 0.95) !important;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
         }
+
         .modal-header {
-            background-color: #121212;
+            background: rgba(18, 18, 18, 0.9) !important;
+            backdrop-filter: blur(10px);
             color: #ffffff;
-            border-radius: 8px 8px 0 0;
-            border-bottom: none;
+            border-radius: 12px 12px 0 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px 20px !important;
         }
+
         .modal-header .close {
             color: #ffffff;
             opacity: 0.8;
+            text-shadow: none;
+            font-size: 20px;
         }
+
         .modal-header .close:hover {
             opacity: 1;
         }
+
         .modal-title {
             font-weight: 500;
+            font-size: 18px;
         }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(18, 18, 18, 0.8) !important;
+            border-radius: 0 0 12px 12px;
+        }
+
         .form-control {
-            border-radius: 6px;
-            border: 1px solid #ddd;
-            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.4) !important;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: #e0e0e0 !important;
+            height: 44px;
         }
+
+        .form-control::placeholder {
+            color: #999999 !important;
+        }
+
         .form-control:focus {
             border-color: #39ADB4;
-            box-shadow: 0 0 0 3px rgba(57, 173, 180, 0.1);
+            box-shadow: 0 0 0 3px rgba(57, 173, 180, 0.2);
+            background: rgba(0, 0, 0, 0.5) !important;
+        }
+
+        /* 表格边框优化 */
+        .table-bordered {
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+
+        .table-bordered th, .table-bordered td {
+            border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        }
+
+        /* 滚动条优化 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(57, 173, 180, 0.5);
+        }
+
+        /* ========== 月度订单统计滚动容器 ========== */
+        .month-order-scroll {
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 15px 0;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 5px;
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .month-order-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .month-order-scroll::-webkit-scrollbar-thumb {
+            background: rgba(57, 173, 180, 0.3);
+        }
+
+        /* 响应式布局优化 */
+        @media (max-width: 768px) {
+            .mdl-layout__content {
+                padding: 10px;
+            }
+
+            .demo-charts {
+                padding: 15px;
+            }
+
+            .tab-content {
+                padding: 15px;
+            }
+
+            .month-order-scroll {
+                max-height: 300px;
+            }
+
+            .templatemo-blue-button {
+                min-width: 100px !important;
+                padding: 8px 16px !important;
+                height: 40px !important;
+            }
+        }
+
+        /* 表单布局优化 */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .control-label {
+            padding-top: 8px;
+            color: #e0e0e0 !important;
+        }
+
+        /* 今日订单项布局优化 */
+        .today-order-item {
+            margin-bottom: 15px !important;
+            padding: 20px !important;
+        }
+
+        /* 按钮容器布局 */
+        .mdl-card__actions {
+            margin-top: 20px;
+            padding: 15px 0 0 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
         }
     </style>
 </head>
 <body>
 
-<!-- 修改密码模块 -->
+<!-- 修改密码模块 - 右侧页面居中显示 -->
 <div class="modal fade" id="update-Psw" tabindex="-1" role="dialog" aria-labelledby="myModalLabelPsw">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -399,14 +689,14 @@
         </div>
     </header>
 
-    <!-- 侧导航栏（全黑+无缝衔接） -->
+    <!-- 侧导航栏 -->
     <div class="demo-drawer mdl-layout__drawer mdl-color--blue-grey-900 mdl-color-text--blue-grey-50">
         <!-- 折叠/展开按钮 -->
         <div class="sidebar-toggle" id="sidebarToggle">
             <i class="material-icons">chevron_left</i>
         </div>
 
-        <!-- Logo容器 - 全黑背景 -->
+        <!-- Logo容器 -->
         <header class="demo-drawer-header">
             <img th:src="@{/admin/images/logo1.png}" class="logo-img" alt="Canteen Logo">
         </header>
@@ -477,14 +767,17 @@
                             </tbody>
                         </table>
                         <div class="mdl-card__actions mdl-card--border">
-                            <button class="templatemo-blue-button" id="changePsw"><h5>修改密码</h5></button>
+                            <button class="templatemo-blue-button" id="changePsw">
+                                <i class="material-icons">lock</i>
+                                <span>修改密码</span>
+                            </button>
                         </div>
                     </div>
 
                     <!-- 今日订单标签页 -->
                     <div role="tabpanel" class="tab-pane" id="todayOrder">
                         <h3>今日订单详情</h3>
-                        <div th:each="order:${session.orderList}" class="demo-charts mdl-color--white mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-grid">
+                        <div th:each="order:${session.orderList}" class="demo-charts mdl-color--white mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-grid today-order-item">
                             <div class="tab-content col-lg-12">
                                 <table class="table " cellpadding="6" cellspacing="1">
                                     <tbody>
@@ -519,7 +812,7 @@
                         </div>
                     </div>
 
-                    <!-- 月度订单标签页 -->
+                    <!-- 月度订单标签页 - 添加滚动容器 -->
                     <div role="tabpanel" class="tab-pane" id="monthOrder">
                         <h3>月度订单统计</h3>
                         <div class="demo-charts mdl-color--white mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-grid">
@@ -541,20 +834,27 @@
                                     </tr>
                                     </tbody>
                                 </table>
-                                <table class="table table-bordered" cellpadding="6" cellspacing="1" th:each="bo:${session.monBlanketOrderList}">
-                                    <tbody>
-                                    <tr>
-                                        <td class="col-lg-2" th:text="${#dates.format(bo.createTime, 'yyyy-MM-dd HH:mm:ss')}">XXX</td>
-                                        <td class="col-lg-1" th:text="${bo.name}">XXX</td>
-                                        <td class="col-lg-2" th:text="${bo.unit}">XXX</td>
-                                        <td class="col-lg-1" th:text="${bo.weight}">XXX</td>
-                                        <td class="col-lg-2" th:text="${bo.totalPrice}">XXX</td>
-                                    </tr>
-                                    </tbody>
-                                </table>
+
+                                <!-- 月度订单滚动容器 -->
+                                <div class="month-order-scroll">
+                                    <table class="table table-bordered" cellpadding="6" cellspacing="1" th:each="bo:${session.monBlanketOrderList}">
+                                        <tbody>
+                                        <tr>
+                                            <td class="col-lg-2" th:text="${#dates.format(bo.createTime, 'yyyy-MM-dd HH:mm:ss')}">XXX</td>
+                                            <td class="col-lg-1" th:text="${bo.name}">XXX</td>
+                                            <td class="col-lg-2" th:text="${bo.unit}">XXX</td>
+                                            <td class="col-lg-1" th:text="${bo.weight}">XXX</td>
+                                            <td class="col-lg-2" th:text="${bo.totalPrice}">XXX</td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                             <div class="mdl-card__actions mdl-card--border">
-                                <a th:href="@{/front/print}" class="templatemo-blue-button " name="finishList"><h5>打印流水</h5></a>
+                                <a th:href="@{/front/print}" class="templatemo-blue-button finish-btn" name="finishList">
+                                    <i class="material-icons">print</i>
+                                    <span>打印流水</span>
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -591,6 +891,9 @@
             // 切换按钮图标
             const icon = isCollapsed ? 'chevron_right' : 'chevron_left';
             $(this).html(`<i class="material-icons">${icon}</i>`);
+
+            // 同步调整模态框位置
+            adjustModalPosition();
         });
 
         // 4. 智能自动折叠（窗口宽度小于768px时）
@@ -603,14 +906,29 @@
             }
         }
 
+        // 调整模态框位置
+        function adjustModalPosition() {
+            const $modalDialog = $('#update-Psw .modal-dialog');
+            if (isCollapsed) {
+                $modalDialog.css('left', 'calc(50% + 30px)');
+            } else {
+                $modalDialog.css('left', 'calc(50% + 120px)');
+            }
+        }
+
+        // 窗口大小变化时调整模态框位置
+        $(window).resize(function() {
+            adjustModalPosition();
+        });
+
         // 初始化时执行一次
-        setTimeout(autoCollapse, 100); // 延迟执行，避免布局未加载完成
-        // 窗口大小变化时执行
-        $(window).resize(autoCollapse);
+        setTimeout(autoCollapse, 100);
 
         // 5. 修改密码模态框交互优化
         $('#changePsw').click(function() {
             $('#update-Psw').modal('show');
+            // 显示时重新计算位置
+            setTimeout(adjustModalPosition, 100);
         });
 
         // 6. 输入框焦点样式优化
@@ -618,6 +936,15 @@
             $(this).parent().addClass('has-focus');
         }).blur(function() {
             $(this).parent().removeClass('has-focus');
+        });
+
+        // 7. 优化滚动容器体验
+        $('.month-order-scroll').on('scroll', function() {
+            $(this).css('box-shadow', 'inset 0 0 10px rgba(0,0,0,0.2)');
+            clearTimeout($(this).data('scrollTimer'));
+            $(this).data('scrollTimer', setTimeout(() => {
+                $(this).css('box-shadow', 'none');
+            }, 100));
         });
     })
 </script>
