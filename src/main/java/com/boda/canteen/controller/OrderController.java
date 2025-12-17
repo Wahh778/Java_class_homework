@@ -204,126 +204,80 @@ public class OrderController {
      * 配送员批量打印功能
      */
     @GetMapping("/exportExcel/{orderIds}")
-    public void exportExcel(
-            @PathVariable String orderIds,
-            HttpServletResponse response) {
+    public void printByBatchWithCaterer(@PathVariable String orderIds,
+                                        HttpServletResponse response) {
+        List<OrderForm> orders = orderFormService.list(
+                new LambdaQueryWrapper<OrderForm>()
+                        .in(OrderForm::getOrderId, orderIds.split(","))
+        );
 
-        try {
-            // 查询订单
-            List<OrderForm> orders = orderFormService.list(
-                    new LambdaQueryWrapper<OrderForm>()
-                            .in(OrderForm::getOrderId, orderIds.split(","))
-            );
+        if (orders.isEmpty()) {
+            return;
+        }
 
-            if (orders.isEmpty()) {
-                response.setStatus(HttpServletResponse.SC_NO_CONTENT);
-                return;
-            }
+        try (ExcelWriter writer = ExcelUtil.getWriter()) {
 
-            // 查询订单详情
-            List<Long> orderIdList = orders.stream()
-                    .map(OrderForm::getOrderId)
-                    .collect(Collectors.toList());
-
-            List<BlanketOrder> details = blanketOrderService.list(
-                    new LambdaQueryWrapper<BlanketOrder>()
-                            .in(BlanketOrder::getOrderId, orderIdList)
-            );
-
-            // 详情按订单ID分组
-            Map<Long, List<BlanketOrder>> detailMap =
-                    details.stream()
-                            .collect(Collectors.groupingBy(BlanketOrder::getOrderId));
-
-            // 设置响应头（⚠ 必须在 getOutputStream 之前）
-            response.reset();
-            response.setContentType("application/vnd.ms-excel;charset=UTF-8");
-            response.setHeader(
-                    "Content-Disposition",
-                    "attachment;filename=orders.xls"
-            );
-
-            ServletOutputStream out = response.getOutputStream();
-            ExcelWriter writer = ExcelUtil.getWriter(true);
-
-            List<Map<String, Object>> rows = new ArrayList<>();
-
-            // 记录每个订单的行范围
-            List<int[]> mergeRanges = new ArrayList<>();
-
-            int rowIndex = 1; // ⚠️ Hutool 默认第 0 行是表头
+            int rowIndex = 0; // ⭐ 核心：当前写到第几行
 
             for (OrderForm o : orders) {
-                List<BlanketOrder> orderDetails =
-                        detailMap.getOrDefault(o.getOrderId(), Collections.emptyList());
 
-                int startRow = rowIndex;
+                writer.setCurrentRow(rowIndex);
+                writer.merge(5, "订单信息");
 
-                // 没有点餐，也占一行
-                if (orderDetails.isEmpty()) {
-                    Map<String, Object> row = new LinkedHashMap<>();
-                    row.put("订单编号", o.getOrderId());
-                    row.put("用户名", o.getName());
-                    row.put("电话", o.getTelephone());
-                    row.put("下单时间",
-                            DateUtil.format(o.getOrderTime(), "yyyy-MM-dd HH:mm:ss"));
-                    row.put("订单金额", o.getOrderPrice());
+                Map<String, Object> orderMap = new LinkedHashMap<>();
+                orderMap.put("订单编号", o.getOrderId());
+                orderMap.put("用户名", o.getName());
+                orderMap.put("电话", o.getTelephone());
+                orderMap.put("下单时间", DateUtil.format(o.getOrderTime(), "HH:mm:ss"));
+                orderMap.put("", "");
+                orderMap.put("订单金额", o.getOrderPrice());
 
-                    row.put("菜品名称", "");
-                    row.put("数量", "");
-                    row.put("单价", "");
-                    row.put("小计", "");
+                writer.writeRow(orderMap.keySet(), false); // 表头
+                writer.writeRow(orderMap.values(), false); // 数据
 
-                    rows.add(row);
+                rowIndex += 3; // 表头 + 数据 + 空行
+
+                List<BlanketOrder> items = blanketOrderService.list(
+                        new LambdaQueryWrapper<BlanketOrder>()
+                                .eq(BlanketOrder::getOrderId, o.getOrderId())
+                );
+
+                // 菜品表头
+                writer.setCurrentRow(rowIndex);
+                writer.writeRow(
+                        Arrays.asList("菜品名称", "计量单位", "数量", "单价", "总计", "下单时间"),
+                        false
+                );
+                rowIndex++;
+
+                // 菜品数据
+                for (BlanketOrder bo : items) {
+                    writer.setCurrentRow(rowIndex);
+                    writer.writeRow(Arrays.asList(
+                            bo.getName(),
+                            bo.getUnit(),
+                            bo.getWeight(),
+                            bo.getPrice(),
+                            bo.getTotalPrice(),
+                            DateUtil.format(bo.getCreateTime(), "HH:mm:ss")
+                    ), false);
                     rowIndex++;
-
-                } else {
-                    for (BlanketOrder d : orderDetails) {
-                        Map<String, Object> row = new LinkedHashMap<>();
-                        row.put("订单编号", o.getOrderId());
-                        row.put("用户名", o.getName());
-                        row.put("电话", o.getTelephone());
-                        row.put("下单时间",
-                                DateUtil.format(o.getOrderTime(), "yyyy-MM-dd HH:mm:ss"));
-                        row.put("订单金额", o.getOrderPrice());
-
-                        row.put("菜品名称", d.getName());
-                        row.put("数量", d.getWeight());
-                        row.put("单价", d.getPrice());
-                        row.put("小计", d.getTotalPrice());
-
-                        rows.add(row);
-                        rowIndex++;
-                    }
                 }
 
-                int endRow = rowIndex - 1;
-
-                // 只有多行才需要 merge
-                if (endRow > startRow) {
-                    mergeRanges.add(new int[]{startRow, endRow});
-                }
+                rowIndex += 2; // ⭐ 关键：订单之间空两行
             }
 
-            writer.write(rows, true);
-
-            for (int[] range : mergeRanges) {
-                int start = range[0];
-                int end = range[1];
-
-                for (int col = 0; col <= 4; col++) {
-                    writer.merge(start, end, col, col, null, false);
-                }
-            }
-
+            response.setContentType("application/vnd.ms-excel;charset=utf-8");
+            response.setHeader("Content-Disposition",
+                    "attachment;filename=order_batch.xls");
+            ServletOutputStream out = response.getOutputStream();
             writer.flush(out, true);
-            writer.close();
+            IoUtil.close(out);
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
-
 
     @GetMapping("/print/{orderIds}")
     public void print(@PathVariable String orderIds, HttpServletResponse response) {
