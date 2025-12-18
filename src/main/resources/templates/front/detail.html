@@ -7,179 +7,738 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>菜品详情</title>
     <link rel="icon" sizes="192x192" th:href="@{/frontStatic/image/logo.png}">
-    <link rel="stylesheet" th:href="@{/frontStatic/css/font-awesome.min.css}">  <!-- 头部样式 -->
-    <link rel="stylesheet" th:href="@{/frontStatic/css/main.css}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <link rel="stylesheet" th:href="@{/frontStatic/css/bootstrap.min.css}">
-    <link rel="stylesheet" th:href="@{/frontStatic/css/font-awesome.min.css}">
     <link rel="stylesheet" th:href="@{/frontStatic/css/style.css}">
     <link rel="stylesheet" th:href="@{/frontStatic/css/shopdetail.css}">
-    <script type="text/javascript" th:src="@{/frontStatic/js/jquery.js}"></script>
-    <script type="text/javascript" th:src="@{/frontStatic/css/bootstrap/js/bootstrap.min.js}"></script>
-    <script type="text/javascript" th:src="@{/frontStatic/js/front/sort.js}"></script>
-    <script type="text/javascript" th:src="@{/frontStatic/js/detail.js}"></script>
-    <script type="text/javascript">
-        $(document).ready(function () {
-            var showproduct = {
-                "boxid": "showbox",
-                "sumid": "showsum",
-                "boxw": 400,
-                "boxh": 550,
-                "sumw": 60, //列表每个宽度,该版本中请把宽高填写成一样
-                "sumh": 60, //列表每个高度,该版本中请把宽高填写成一样
-                "sumi": 7, //列表间隔
-                "sums": 5, //列表显示个数
-                "sumsel": "sel",
-                "sumborder": 1, //列表边框，没有边框填写0，边框在css中修改
-                "lastid": "showlast",
-                "nextid": "shownext"
-            };
-            //方法调用detail.js
-            $.ljsGlasses.pcGlasses(showproduct);
+    <link rel="stylesheet" th:href="@{/layui/css/layui.css}" media="all">
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/sweetalert/1.1.3/sweetalert.min.css">
 
-            $("#weight").blur(function (){
-                var num = $("#weight").val();
-                if (num <= 0 || num > 9) {
-                    $(this).val(1);
-                }
-            });
+    <style th:inline="css">
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-            $("#formSubmit").click(function (){
-                var name = $("#name").val();
-                var unit = $("#unit").val();
-                var price = $("#price").val();
-                var picture = $("#picture").val();
-                var weight = $("#weight").val();
-                var data = {
-                    "name": name,
-                    "unit": unit,
-                    "price": price,
-                    "picture": picture,
-                    "weight": weight
-                }
-                $.ajax({
-                   url: '/shopCart/add',
-                   data: JSON.stringify(data),
-                   dataType: 'json',
-                   contentType: 'application/json',
-                   type: 'post',
-                   success: function(result) {
-                       if (result.code === 200) {
-                           alert(result.data);
-                       } else {
-                           alert(result.msg);
-                       }
-                   }
-                });
-            });
-        });
-    </script>
+        body {
+            background: #000000 url(/admin/images/bg.jpg) center center fixed;
+            background-size: cover;
+            color: #ffffff;
+            font-family: 'Microsoft Yahei', 'PingFang SC', Arial, sans-serif;
+            line-height: 1.6;
+            position: relative;
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: -1;
+        }
+
+        a {
+            text-decoration: none;
+            color: #ffffff;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        ul, li {
+            list-style: none;
+        }
+
+        /* 汉堡导航样式 保持不变 */
+        .cd-header {
+            position: fixed;
+            width: 100%;
+            top: 0;
+            left: 0;
+            z-index: 100;
+        }
+
+        .header-wrapper {
+            position: relative;
+            width: calc(100% - 100px);
+            margin-left: 50px;
+        }
+
+        .nav-but-wrap {
+            position: relative;
+            display: inline-block;
+            float: left;
+            padding-left: 15px;
+            padding-top: 15px;
+            margin-top: 26px;
+            transition: all 0.3s ease-out;
+        }
+
+        .menu-icon {
+            height: 30px;
+            width: 30px;
+            position: relative;
+            z-index: 2;
+            cursor: pointer;
+            display: block;
+        }
+
+        .menu-icon__line {
+            height: 2px;
+            width: 30px;
+            display: block;
+            background-color: #fff;
+            margin-bottom: 7px;
+            cursor: pointer;
+            transition: background-color .5s ease, transform .2s ease;
+        }
+
+        .menu-icon__line-left {
+            width: 16.5px;
+            transition: all 200ms linear;
+        }
+
+        .menu-icon__line-right {
+            width: 16.5px;
+            float: right;
+            transition: all 200ms linear;
+        }
+
+        .menu-icon:hover .menu-icon__line-left,
+        .menu-icon:hover .menu-icon__line-right {
+            width: 30px;
+        }
+
+        .nav {
+            position: fixed;
+            z-index: 98;
+            visibility: hidden;
+        }
+
+        .nav:before, .nav:after {
+            content: "";
+            position: fixed;
+            top: 20px;
+            left: 50px;
+            width: 0;
+            height: 0;
+            background-color: rgba(20, 21, 26, 0.6);
+            border-bottom-right-radius: 200%;
+            z-index: -1;
+            transition: border-radius linear 0.8s, width cubic-bezier(0.77, 0, 0.175, 1) 0.6s, height cubic-bezier(0.77, 0, 0.175, 1) 0.6s;
+        }
+
+        .nav:after {
+            background-color: rgba(9, 9, 12, 1);
+            background-image: url('https://s3-us-west-2.amazonaws.com/s.cdpn.io/1462889/pat.svg');
+            background-position: bottom center;
+            background-repeat: no-repeat;
+            background-size: 300%;
+            transition-delay: 0s;
+            box-shadow: 6px 7px 28px 0 rgba(16, 16, 16, 0.3);
+        }
+
+        .nav:before {
+            transition-delay: .2s;
+        }
+
+        .nav__content {
+            position: fixed;
+            visibility: hidden;
+            top: 90px;
+            left: 50px;
+            width: 280px;
+            text-align: left;
+        }
+
+        .nav__list {
+            position: relative;
+            padding: 0;
+            margin: 0;
+            z-index: 2;
+        }
+
+        .nav__list-item {
+            position: relative;
+            display: block;
+            transition-delay: 0.8s;
+            opacity: 0;
+            text-align: left;
+            color: #fff;
+            overflow: hidden;
+            font-family: 'Poppins', sans-serif;
+            font-size: 22px;
+            line-height: 1.2;
+            letter-spacing: 2px;
+            transform: translate(30px, 0%);
+            transition: opacity .2s ease, transform .2s ease;
+            margin-top: 7px;
+            margin-bottom: 7px;
+        }
+
+        .nav__list-item a {
+            position: relative;
+            text-decoration: none;
+            color: rgba(255, 255, 255, 0.6);
+            overflow: hidden;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 600;
+            z-index: 2;
+            padding-left: 40px;
+            padding-top: 5px;
+            padding-bottom: 5px;
+            display: inline-block;
+            transition: all 200ms linear;
+        }
+
+        .nav__list-item a:after {
+            position: absolute;
+            content: '';
+            top: 50%;
+            left: 0;
+            width: 5px;
+            height: 0;
+            opacity: 0;
+            background-color: #8167a9;
+            z-index: 1;
+            transition: all 200ms linear;
+        }
+
+        .nav__list-item a:hover:after {
+            height: 100%;
+            opacity: 1;
+            top: 0;
+        }
+
+        .nav__list-item a:hover {
+            color: rgba(255, 255, 255, 1);
+        }
+
+        .nav__list-item.active-nav a {
+            color: rgba(255, 255, 255, 1);
+        }
+
+        .nav__list-item.active-nav a:after {
+            height: 100%;
+            opacity: 1;
+            top: 0;
+        }
+
+        body.nav-active .nav__content {
+            visibility: visible;
+        }
+
+        body.nav-active .menu-icon__line {
+            background-color: #fff;
+            transform: translate(0px, 0px) rotate(-45deg);
+        }
+
+        body.nav-active .menu-icon__line-left {
+            width: 15px;
+            transform: translate(2px, 4px) rotate(45deg);
+        }
+
+        body.nav-active .menu-icon__line-right {
+            width: 15px;
+            float: right;
+            transform: translate(-3px, -3.5px) rotate(45deg);
+        }
+
+        body.nav-active .menu-icon:hover .menu-icon__line-left,
+        body.nav-active .menu-icon:hover .menu-icon__line-right {
+            width: 15px;
+        }
+
+        body.nav-active .nav {
+            visibility: visible;
+        }
+
+        body.nav-active .nav:after {
+            width: 250px;
+            height: 350px;
+            border-radius: 15px;
+        }
+
+        body.nav-active .nav:after {
+            transition-delay: .1s;
+        }
+
+        body.nav-active .nav:before {
+            transition-delay: 0s;
+        }
+
+        body.nav-active .nav__list-item {
+            opacity: 1;
+            transform: translateX(0%);
+            transition: opacity .3s ease, transform .3s ease, color .3s ease;
+        }
+
+        body.nav-active .nav__list-item:nth-child(1) {
+            transition-delay: 0.8s;
+        }
+
+        body.nav-active .nav__list-item:nth-child(2) {
+            transition-delay: 0.9s;
+        }
+
+        body.nav-active .nav__list-item:nth-child(3) {
+            transition-delay: 1s;
+        }
+
+        body.nav-active .nav__list-item:nth-child(4) {
+            transition-delay: 1.1s;
+        }
+
+        body.nav-active .nav__list-item:nth-child(5) {
+            transition-delay: 1.2s;
+        }
+
+        /* 菜品详情主体样式 保持不变 */
+        #main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            margin-top: 120px;
+        }
+
+        .cramb_area {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 30px;
+        }
+
+        .cramb_area > li > a {
+            color: #ffffff;
+        }
+
+        .cramb_area > li > a:hover {
+            color: #F22E00;
+        }
+
+        .br-active {
+            color: #F22E00;
+            font-weight: 600;
+        }
+
+        .detail-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        /* ========== 关键修改：平面旋转菜品展示 ========== */
+        .product-image {
+            flex: 1;
+            min-width: 300px;
+            min-height: 400px;
+            /* 移除3D透视属性 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 平面旋转容器 */
+        .product-2d-rotate {
+            width: 100%;
+            max-width: 400px;
+            height: 400px;
+            position: relative;
+            /* 仅保留2D旋转，无3D变换 */
+        }
+
+        /* 菜品图片样式 */
+        .product-rotate-img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            object-fit: cover;
+            box-shadow: 0 0 30px rgba(22, 93, 255, 0.3);
+            /* 平面旋转动画：绕中心点360度旋转 */
+            animation: planeRotate 20s linear infinite;
+            transition: transform 0.3s ease;
+        }
+
+        /* 鼠标悬停：暂停旋转 + 轻微放大 */
+        .product-2d-rotate:hover .product-rotate-img {
+            animation-play-state: paused;
+            transform: scale(1.05);
+        }
+
+        /* 平面旋转关键帧（仅transform: rotate()） */
+        @keyframes planeRotate {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ========== 平面旋转样式结束 ========== */
+
+        .product-info {
+            flex: 1;
+            min-width: 300px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .product-title, .product-details {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        .product-title h3 {
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #F22E00;
+            padding-bottom: 10px;
+        }
+
+        .price_box {
+            margin-bottom: 20px;
+        }
+
+        .spical-price-2 {
+            color: #F22E00 !important;
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        .new_meta {
+            margin-bottom: 15px;
+        }
+
+        .sku_wrapper {
+            color: #ffffff;
+            font-size: 18px;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .sku {
+            color: #833f9e;
+            margin-left: 10px;
+        }
+
+        .rel-div {
+            margin-top: 30px;
+        }
+
+        #weight {
+            width: 80px;
+            padding: 12px 15px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 16px;
+            margin-right: 15px;
+            text-align: center;
+        }
+
+        #weight:focus {
+            outline: none;
+            border-color: #165DFF;
+            box-shadow: 0 0 0 2px rgba(22, 93, 255, 0.2);
+        }
+
+        .add-tocart {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #165DFF 0%, #0F48C9 100%);
+            color: #ffffff !important;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(22, 93, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .add-tocart:hover {
+            background: linear-gradient(135deg, #0F48C9 0%, #0A3699 100%);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(22, 93, 255, 0.5);
+        }
+
+        .add-tocart::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s ease, height 0.6s ease;
+        }
+
+        .add-tocart:active::after {
+            width: 300px;
+            height: 300px;
+            opacity: 0;
+        }
+
+        /* 响应式适配 */
+        @media (max-width: 768px) {
+            #main {
+                margin-top: 100px;
+                padding: 0 10px;
+            }
+
+            .product-image {
+                margin-bottom: 20px;
+                min-height: 300px;
+            }
+
+            .product-2d-rotate {
+                height: 300px;
+            }
+
+            .product-title, .product-details {
+                padding: 20px 15px;
+            }
+
+            .product-title h3 {
+                font-size: 24px;
+            }
+
+            .spical-price-2 {
+                font-size: 28px;
+            }
+
+            .sku_wrapper {
+                font-size: 16px;
+            }
+
+            .add-tocart {
+                padding: 10px 24px;
+                font-size: 16px;
+                margin-top: 15px;
+            }
+
+            #weight {
+                width: 70px;
+                padding: 10px 12px;
+            }
+        }
+    </style>
 </head>
 <body>
-<div class="elavator_area">
-    <div class="container">
-        <div class="row">
-            <div class="col-md-4" role="navigation">
-            </div>
-            <div class="col-md-8">
-                <ul class="nav nav-pills pull-right">
-                    <li><a th:href="@{/front/toShopCart}"> <i
-                            class="fa fa-shopping-cart" style="color: #F22E00"></i>
-                        购物车
-                    </a></li>
-                    <li class="info-a">
-                        <a th:href="@{/front/toInfo}" style="color: #F22E00" th:text="${session.currUser.name}">
-                            name
-                            <span class="glyphicon glyphicon-triangle-bottom" style="font-size: 5px;margin-left: 7px;" aria-hidden="true">
-            </span>
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a th:href="@{/front/toInfo}">账户管理</a></li>
-                            <li role="separator" class="divider"></li>
-                            <li><a th:href="@{/front/logout}" class="login-out">退出登录</a></li>
-                        </ul>
-                    </li>
-                </ul>
+<!-- 汉堡导航结构 保持不变 -->
+<header class="cd-header">
+    <div class="header-wrapper">
+        <div class="nav-but-wrap">
+            <div class="menu-icon hover-target">
+                <span class="menu-icon__line menu-icon__line-left"></span>
+                <span class="menu-icon__line"></span>
+                <span class="menu-icon__line menu-icon__line-right"></span>
             </div>
         </div>
-        <div id="header-nav">
-            <nav class="navbar navbar-default" id="header-nav-middle">
-                <div class="container-fluid">
-                    <div class="navbar-header">
-                        <button type="button" class="navbar-toggle collapsed"
-                                data-toggle="collapse"
-                                data-target="#bs-example-navbar-collapse-1"
-                                aria-expanded="false">
-                            <span class="sr-only">Toggle navigation</span> <span
-                                class="icon-bar"></span> <span class="icon-bar"></span> <span
-                                class="icon-bar"></span>
-                        </button>
-                        <a class="navbar-brand" th:href="@{/front/toMain}"><span class="logo-word">My Canteen</span></a>
-                    </div>
+    </div>
+</header>
 
-                    <div class="collapse navbar-collapse"
-                         id="bs-example-navbar-collapse-1">
-                        <ul class="nav navbar-nav">
-                            <li><a class="a-color" th:href="@{/front/toMain}">首页</a></li>
-                            <li><a class="a-color" th:href="@{/front/toOrder}">我的订单</a></li>
-                        </ul>
-                    </div>
-                </div>
-            </nav>
-        </div>
-        <div class="shop_menu shop_menu_2 main-detail-div">
-            <ul class="cramb_area cramb_area_5 main-detail-nav">
-                <li><a th:href="@{/front/toMain}">首页 /</a></li>
-                <li class="br-active" th:text="${session.menuDetail.name}">菜品</li>
-            </ul>
-        </div>
-        <div class="row">
-            <div class="col-lg-5 col-md-5 col-sm-12 col-xs-12">
-                <div class="shopdetails">
-                    <div id="leftbox">
-                        <div id="showbox">
-                            <img th:src="|/picture/${session.menuDetail.picture}|" width="400" height="400" alt=""/>
-                        </div>
-                    </div>
-                </div>
+<div class="nav">
+    <div class="nav__content">
+        <ul class="nav__list">
+            <li class="nav__list-item active-nav">
+                <a th:href="@{/front/toMain}" class="hover-target">
+                    <i class="fa fa-home"></i> 首页
+                </a>
+            </li>
+            <li class="nav__list-item">
+                <a th:href="@{/front/toShopCart}" class="hover-target">
+                    <i class="fa fa-shopping-cart"></i> 购物车
+                </a>
+            </li>
+            <li class="nav__list-item">
+                <a th:href="@{/front/toOrder}" class="hover-target">
+                    <i class="fa fa-file-text"></i> 我的订单
+                </a>
+            </li>
+            <li class="nav__list-item">
+                <a th:href="@{/front/toInfo}" class="hover-target">
+                    <i class="fa fa-user"></i> 账户管理
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<!-- 菜品详情主体 -->
+<div id="main" class="container">
+    <div class="shop_menu shop_menu_2">
+        <ul class="cramb_area cramb_area_5">
+            <li><a th:href="@{/front/toMain}">首页 /</a></li>
+            <li class="br-active" th:text="${session.menuDetail.name}">菜品</li>
+        </ul>
+    </div>
+
+    <div class="detail-container">
+        <!-- 平面旋转菜品展示区域 -->
+        <div class="product-image">
+            <div class="product-2d-rotate">
+                <img th:src="|/picture/${session.menuDetail.picture}|" class="product-rotate-img" alt="菜品图片"/>
             </div>
-            <div class="col-lg-6 col-md-6 col-sm-12 col-xs-12">
-                <div class="elav_titel">
-                    <div class="elv_heading">
-                        <h3 th:text="${session.menuDetail.name}">菜品</h3>
-                    </div>
-                    <div class="price_rating">
-                    </div>
+        </div>
+
+        <!-- 菜品信息区域 保持不变 -->
+        <div class="product-info">
+            <div class="product-title">
+                <h3 th:text="${session.menuDetail.name}">菜品名称</h3>
+            </div>
+
+            <div class="product-details">
+                <div class="price_box price_box_acr new_meta">
+                    <span class="spical-price spical-price-2" th:text="'￥' + ${session.menuDetail.price}">￥00.00</span>
                 </div>
-                <div class="elav_info">
-                    <div class="price_box price_box_acr new_meta">
-                        <span class="spical-price spical-price-2" th:text="'￥' + ${session.menuDetail.price}">￥00.00</span>
-                    </div>
-                    <div class="new_meta">
-                        <span class="sku_wrapper big-font">
-                            类别:
-                            <span class="sku" th:text="${session.menuDetail.category}">无</span>
-                        </span>
-                        <span class="sku_wrapper big-font">
-                            计量单位:
-                            <span class="sku" th:text="${session.menuDetail.unit}">无</span>
-                        </span>
-                    </div>
-                    <div class="rel-div">
-                        <form class="cart-btn-area new_meta">
-                            <input type="hidden" id="name" name="name" th:value="${session.menuDetail.name}"/>
-                            <input type="hidden" id="unit" name="unit" th:value="${session.menuDetail.unit}"/>
-                            <input type="hidden" id="price" name="price" th:value="${session.menuDetail.price}"/>
-                            <input type="hidden" id="picture" name="picture" th:value="${session.menuDetail.picture}"/>
-                            <input type="number" value="1" name="weight" id="weight">
-                            <button class="add-tocart cart_zpf" type="button" id="formSubmit">加入购物车</button>
-                        </form>
-                    </div>
+
+                <div class="new_meta">
+                    <span class="sku_wrapper big-font">
+                        类别:
+                        <span class="sku" th:text="${session.menuDetail.category}">无</span>
+                    </span>
+                    <span class="sku_wrapper big-font">
+                        计量单位:
+                        <span class="sku" th:text="${session.menuDetail.unit}">无</span>
+                    </span>
+                </div>
+
+                <div class="rel-div">
+                    <form class="cart-btn-area new_meta">
+                        <input type="hidden" id="name" name="name" th:value="${session.menuDetail.name}"/>
+                        <input type="hidden" id="unit" name="unit" th:value="${session.menuDetail.unit}"/>
+                        <input type="hidden" id="price" name="price" th:value="${session.menuDetail.price}"/>
+                        <input type="hidden" id="picture" name="picture" th:value="${session.menuDetail.picture}"/>
+                        <input type="number" value="1" name="weight" id="weight" min="1" max="9">
+                        <button class="add-tocart cart_zpf" type="button" id="formSubmit">
+                            <i class="fa fa-shopping-cart"></i> 加入购物车
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- 脚本部分 保持不变 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script th:src="@{/frontStatic/css/bootstrap/js/bootstrap.min.js}"></script>
+<script th:src="@{/frontStatic/js/front/sort.js}"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/sweetalert/1.1.3/sweetalert.min.js"></script>
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        // 数量输入框验证
+        $("#weight").on('blur input', function () {
+            var num = parseInt($(this).val());
+            if (isNaN(num) || num <= 0 || num > 9) {
+                $(this).val(1);
+            }
+        });
+
+        // 加入购物车提交
+        $("#formSubmit").on('click', function () {
+            console.log("加入购物车按钮点击触发");
+            var name = $("#name").val();
+            var unit = $("#unit").val();
+            var price = $("#price").val();
+            var picture = $("#picture").val();
+            var weight = $("#weight").val();
+
+            if (isNaN(weight) || weight <= 0 || weight > 9) {
+                swal({
+                    title: "提示",
+                    text: "数量必须在1-9之间",
+                    type: "warning",
+                    confirmButtonText: "确定"
+                });
+                $("#weight").val(1);
+                return;
+            }
+
+            var data = {
+                "name": name,
+                "unit": unit,
+                "price": price,
+                "picture": picture,
+                "weight": weight
+            };
+
+            console.log("提交购物车数据：", data);
+            $.ajax({
+                url: '/shopCart/add',
+                data: JSON.stringify(data),
+                dataType: 'json',
+                contentType: 'application/json',
+                type: 'post',
+                success: function (result) {
+                    console.log("接口返回结果：", result);
+                    if (result.code === 200) {
+                        swal({
+                            title: "成功",
+                            text: result.data,
+                            type: "success",
+                            confirmButtonText: "确定"
+                        });
+                    } else {
+                        swal({
+                            title: "提示",
+                            text: result.msg,
+                            type: "warning",
+                            confirmButtonText: "确定"
+                        });
+                    }
+                },
+                error: function (xhr, status, error) {
+                    console.error("接口请求失败：", status, error);
+                    swal({
+                        title: "错误",
+                        text: "网络异常，请稍后重试",
+                        type: "error",
+                        confirmButtonText: "确定"
+                    });
+                }
+            });
+        });
+
+        // 汉堡导航逻辑
+        var body = document.querySelector('body');
+        var menu = document.querySelector('.menu-icon');
+        if (menu) {
+            menu.addEventListener('click', function () {
+                if (body.classList.contains('nav-active')) {
+                    body.classList.remove('nav-active');
+                } else {
+                    body.classList.add('nav-active');
+                }
+            });
+        }
+    });
+</script>
 </body>
 </html>
-
-
