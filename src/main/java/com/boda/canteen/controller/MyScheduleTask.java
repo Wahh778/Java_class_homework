@@ -68,16 +68,6 @@ public class MyScheduleTask {
         log.info("上个月的销售订单自动生成{}", res ? "成功" : "失败");
     }
 
-//    /**
-//     * 每周的周一的0点整自动清除所有用户的购物车信息
-//     */
-//    @Scheduled(cron = "0 0 0 ? * 2")
-//    public void clearShopCart(){
-//        LambdaQueryWrapper<ShopCart> queryWrapper = new LambdaQueryWrapper<>();
-//        queryWrapper.or();
-//        shopCartService.remove(queryWrapper);
-//        log.info("本日已结束，自动清除所有用户购物车");
-//    }
     /**
      * 清除所有用户的购物车信息（动态cron，移除@Scheduled注解）
      */
@@ -88,72 +78,59 @@ public class MyScheduleTask {
     }
 
     /**
-     * 每周周天23:00:00分自动统计该周的所有菜品并归纳为这周历史菜单
-     */
-//    @Scheduled(cron = "0 0 23 ? * 1")
-//    public void addHistoryMenu() {
-//        History history = new History();
-//        // 获取当前时间的一周的开始与结尾
-//        Date weekOfBeginTime = MyTimeUtils.getWeekOfBeginTime();
-//        Date weekOfEndTime = MyTimeUtils.getWeekOfEndTime();
-//        String weekOfBeginTimeStr = DateUtil.formatDate(weekOfBeginTime);
-//        String weekOfEndTimeStr = DateUtil.formatDate(weekOfEndTime);
-//        // 设置时间范围
-//        history.setTimeRange(weekOfBeginTimeStr + "~" + weekOfEndTimeStr);
-//        // 设置menuIds 通过字符串拼接这一周的所有菜单编号
-//        StringBuilder sb = new StringBuilder();
-//        LambdaQueryWrapper<Menu> queryWrapper = new LambdaQueryWrapper<>();
-//        queryWrapper.between(Menu::getCreateTime, weekOfBeginTime, weekOfEndTime);
-//        List<Menu> menuList = menuService.list(queryWrapper);
-//        for (Menu m : menuList) {
-//            sb.append(m.getMenuId()).append(",");
-//        }
-//        history.setMenuIds(sb.substring(0, sb.length() - 1));
-//        // 加入数据库
-//        boolean res = historyService.save(history);
-//        log.info("自动收集历史菜单：{}", res ? "成功" : "失败");
-//    }
-    /**
-     * 自动统计当日菜单的菜品并归纳为历史菜单（时间范围：本日菜单的业务时间范围）
+     * 自动统计当日菜单的菜品并归纳为历史菜单
+     * 核心逻辑：timeRange格式为「昨日配餐开始时间~本日订餐截止时间」（如2025-12-17 10:31:00~2025-12-18 10:00:00）
+     * 新增：时间范围唯一性校验，避免重复保存相同时间段的历史记录
      */
     public void addHistoryMenu() {
-        // 1. 获取数据库时间配置
+        // 1. 获取数据库中的时间配置（配餐开始时间、订餐截止时间）
         TimeConfig timeConfig = timeConfigService.getCurrentConfig();
-        String mealStartTime = timeConfig.getMealStartTime(); // 配餐开始时间（HH:mm:ss）
-        String orderDeadline = timeConfig.getOrderDeadline(); // 订餐截止时间（HH:mm:ss）
+        String mealStartTime = timeConfig.getMealStartTime(); // 例：10:31:00
+        String orderDeadline = timeConfig.getOrderDeadline(); // 例：10:00:00
 
-        // 2. 计算「本日菜单」的业务时间范围（和pageToday接口逻辑一致）
-        Date startTime, endTime;
+        // 2. 计算「本日菜单」的业务时间范围（核心：昨日配餐开始 ~ 本日订餐截止）
         LocalDate today = MyTimeUtils.getToday();
-        if (MyTimeUtils.isAfterTodayOrderDeadline(orderDeadline)) {
-            // 当前时间已超过本日orderDeadline → 统计的是「已结束的本日菜单范围」：本日mealStartTime ~ 明日orderDeadline
-            startTime = MyTimeUtils.getDateWithTime(today, mealStartTime); // 本日mealStartTime
-            endTime = MyTimeUtils.getDateWithTime(today.plusDays(1), orderDeadline); // 明日orderDeadline
-        } else {
-            // 当前时间未超过本日orderDeadline → 统计的是「已结束的昨日菜单范围」：昨日mealStartTime ~ 本日orderDeadline
-            startTime = MyTimeUtils.getDateWithTime(today.minusDays(1), mealStartTime); // 昨日mealStartTime
-            endTime = MyTimeUtils.getDateWithTime(today, orderDeadline); // 本日orderDeadline
+        LocalDate yesterday = today.minusDays(1); // 昨日日期
+
+        // 昨日配餐开始时间（如2025-12-17 10:31:00）
+        Date startTime = MyTimeUtils.getDateWithTime(yesterday, mealStartTime);
+        // 本日订餐截止时间（如2025-12-18 10:00:00）
+        Date endTime = MyTimeUtils.getDateWithTime(today, orderDeadline);
+
+        // 3. 构建timeRange字段（格式：yyyy-MM-dd HH:mm:ss~yyyy-MM-dd HH:mm:ss）
+        String startTimeStr = DateUtil.formatDateTime(startTime);
+        String endTimeStr = DateUtil.formatDateTime(endTime);
+        String timeRange = startTimeStr + "~" + endTimeStr;
+
+        // ========== 新增：时间范围唯一性校验 ==========
+        LambdaQueryWrapper<History> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(History::getTimeRange, timeRange);
+        // 检查该时间范围是否已存在历史记录
+        long count = historyService.count(wrapper);
+        if (count > 0) {
+            log.info("时间范围{}已存在历史记录，跳过保存", timeRange);
+            return; // 直接返回，不执行后续保存逻辑
         }
 
-        // 3. 构建历史菜单的时间范围描述（带时分秒，更精准）
-        String timeRange = DateUtil.formatDateTime(startTime) + "~" + DateUtil.formatDateTime(endTime);
+        // 4. 构建历史菜单对象
         History history = new History();
-        history.setTimeRange(timeRange);
+        history.setTimeRange(timeRange); // 保留完整时间范围格式
 
-        // 4. 查询该时间范围内的所有菜单
+        // 5. 查询该时间范围内的所有菜单
         StringBuilder sb = new StringBuilder();
         LambdaQueryWrapper<Menu> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.between(Menu::getCreateTime, startTime, endTime);
         List<Menu> menuList = menuService.list(queryWrapper);
 
-        // 5. 保存历史菜单（拼接菜单ID）
+        // 6. 拼接菜单ID并保存
         for (Menu m : menuList) {
             sb.append(m.getMenuId()).append(",");
         }
         if (sb.length() > 0) {
             history.setMenuIds(sb.substring(0, sb.length() - 1)); // 移除最后一个逗号
             boolean res = historyService.save(history);
-            log.info("自动收集历史菜单[{}]：{}，共{}个菜品", timeRange, res ? "成功" : "失败", menuList.size());
+            log.info("自动收集历史菜单[{}]：{}，共{}个菜品",
+                    timeRange, res ? "成功" : "失败", menuList.size());
         } else {
             log.info("历史菜单[{}]无菜品数据，无需收集", timeRange);
         }

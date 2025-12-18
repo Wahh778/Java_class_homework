@@ -50,52 +50,6 @@ public class MenuController {
         return menu != null ? R.success(menu) : R.fail("获取菜品信息失败");
     }
 
-//    /**
-//     * 今日菜单分页接口
-//     */
-//    @GetMapping("/pageToday")
-//    public R<Page<Menu>> getTodayMenu(
-//            @RequestParam(defaultValue = "1") int page,
-//            @RequestParam(defaultValue = "10") int limit,
-//            @RequestParam(required = false) String name) {
-//        Page<Menu> pageInfo = new Page<>(page, limit);
-//        LambdaQueryWrapper<Menu> queryWrapper = new LambdaQueryWrapper<>();
-//
-//        // 获取当天时间范围
-//        Date todayBegin = MyTimeUtils.getDayOfBeginTime();
-//        Date todayEnd = MyTimeUtils.getDayOfEndTime();
-//
-//        queryWrapper.eq(StringUtils.isNotEmpty(name), Menu::getName, name)
-//                .between(Menu::getCreateTime, todayBegin, todayEnd)
-//                .orderByDesc(Menu::getCreateTime);
-//
-//        menuService.page(pageInfo, queryWrapper);
-//        return R.success(pageInfo);
-//    }
-//
-//    /**
-//     * 明日菜单分页接口
-//     */
-//    @GetMapping("/pageTomorrow")
-//    public R<Page<Menu>> getTomorrowMenu(
-//            @RequestParam(defaultValue = "1") int page,
-//            @RequestParam(defaultValue = "10") int limit,
-//            @RequestParam(required = false) String name) {
-//        Page<Menu> pageInfo = new Page<>(page, limit);
-//        LambdaQueryWrapper<Menu> queryWrapper = new LambdaQueryWrapper<>();
-//
-//        // 获取明日时间范围
-//        Date tomorrowBegin = MyTimeUtils.getNextDayOfBeginTime();
-//        Date tomorrowEnd = MyTimeUtils.getNextDayOfEndTime();
-//
-//        queryWrapper.eq(StringUtils.isNotEmpty(name), Menu::getName, name)
-//                .between(Menu::getCreateTime, tomorrowBegin, tomorrowEnd)
-//                .orderByDesc(Menu::getCreateTime);
-//
-//        menuService.page(pageInfo, queryWrapper);
-//        return R.success(pageInfo);
-//    }
-
     /**
      * 今日菜单分页接口（动态范围：根据当前时间是否超过本日orderDeadline调整）
      */
@@ -312,7 +266,7 @@ public class MenuController {
     }
 
     /**
-     * 复用到明日菜单接口
+     * 复用到明日菜单接口（与添加菜单接口时间逻辑完全对齐）
      */
     @PreAuthorize("hasRole('manager')")
     @PostMapping("/multiplex/{menuIds}")
@@ -321,45 +275,92 @@ public class MenuController {
             return R.fail("请选择要复用的菜单");
         }
 
+        // 1. 获取数据库时间配置（与添加接口一致）
+        TimeConfig timeConfig = timeConfigService.getCurrentConfig();
+        String mealStartTime = timeConfig.getMealStartTime(); // 配餐开始时间
+        String orderDeadline = timeConfig.getOrderDeadline(); // 订餐截止时间
+
+        // 2. 计算明日菜单时间范围（完全复用添加接口的逻辑）
+        Date tomorrowMenuBegin, tomorrowMenuEnd;
+        LocalDate baseDate;
+        if (MyTimeUtils.isAfterTodayOrderDeadline(orderDeadline)) {
+            // 当前时间已超本日截止 → 明日菜单：明日mealStartTime ~ 后日orderDeadline
+            baseDate = MyTimeUtils.getTomorrow();
+            tomorrowMenuBegin = MyTimeUtils.getDateWithTime(baseDate, mealStartTime);
+            tomorrowMenuEnd = MyTimeUtils.getDateWithTime(baseDate.plusDays(1), orderDeadline);
+        } else {
+            // 当前时间未超本日截止 → 明日菜单：本日mealStartTime ~ 明日orderDeadline
+            baseDate = MyTimeUtils.getToday();
+            tomorrowMenuBegin = MyTimeUtils.getDateWithTime(baseDate, mealStartTime);
+            tomorrowMenuEnd = MyTimeUtils.getDateWithTime(baseDate.plusDays(1), orderDeadline);
+        }
+
+        log.info("复用明日菜单时间范围：{} ~ {}",
+                DateUtil.formatDateTime(tomorrowMenuBegin),
+                DateUtil.formatDateTime(tomorrowMenuEnd));
+
         StringBuilder sb = new StringBuilder();
         boolean res = true;
         String[] ids = menuIds.split(",");
-        Date tomorrowBegin = MyTimeUtils.getNextDayOfBeginTime();
-        Date tomorrowEnd = MyTimeUtils.getNextDayOfEndTime();
 
         for (String id : ids) {
             try {
                 Long menuId = Long.valueOf(id);
-                Menu menu = menuService.getById(menuId);
+                Menu sourceMenu = menuService.getById(menuId);
 
-                if (menu != null) {
-                    String name = menu.getName();
-                    // 检查明日是否已存在该菜品
-                    LambdaQueryWrapper<Menu> queryWrapper = new LambdaQueryWrapper<>();
-                    queryWrapper.eq(Menu::getName, name)
-                            .between(Menu::getCreateTime, tomorrowBegin, tomorrowEnd);
-                    Menu one = menuService.getOne(queryWrapper);
+                if (sourceMenu == null) {
+                    res = false;
+                    log.warn("菜单ID {} 不存在，跳过复用", id);
+                    continue;
+                }
 
-                    if (one == null) {
-                        menu.setCreateTime(tomorrowBegin);
-                        menu.setMenuId(null); // 清空ID实现新增
-                        res = res && menuService.save(menu);
-                    } else {
-                        res = false;
-                        sb.append(menu.getName()).append("、");
-                    }
+                String menuName = sourceMenu.getName();
+                // 3. 检查明日菜单时间范围内是否已存在该菜品（与添加接口一致）
+                LambdaQueryWrapper<Menu> queryWrapper = new LambdaQueryWrapper<>();
+                queryWrapper.eq(Menu::getName, menuName)
+                        .between(Menu::getCreateTime, tomorrowMenuBegin, tomorrowMenuEnd);
+                Menu existMenu = menuService.getOne(queryWrapper);
+
+                if (existMenu != null) {
+                    res = false;
+                    sb.append(menuName).append("、");
+                    continue;
+                }
+
+                // 4. 构建新菜单对象（createTime与添加接口一致，设为明日菜单起始时间）
+                Menu newMenu = new Menu();
+                newMenu.setName(sourceMenu.getName());
+                newMenu.setCategory(sourceMenu.getCategory());
+                newMenu.setPicture(sourceMenu.getPicture());
+                newMenu.setUnit(sourceMenu.getUnit());
+                newMenu.setPrice(sourceMenu.getPrice());
+                newMenu.setCreateTime(tomorrowMenuBegin); // 核心：与添加接口时间对齐
+
+                // 5. 执行新增（自增主键，无需手动设置menuId）
+                boolean saveSuccess = menuService.save(newMenu);
+                if (!saveSuccess) {
+                    res = false;
+                    log.error("菜单 {}（ID:{}）复用失败", menuName, id);
                 }
             } catch (NumberFormatException e) {
                 res = false;
-                log.error("菜单ID格式错误: {}", id, e);
+                log.error("菜单ID格式错误: {}，请传入数字ID", id, e);
             }
         }
 
+        // 6. 统一返回结果（细化提示信息）
         if (res) {
-            return R.success("批量复用成功");
+            return R.success("所有选中菜单批量复用至明日菜单成功");
         } else {
-            String msg = sb.length() > 0 ? "[" + sb.substring(0, sb.length() - 1) + "]已存在，无法复用，其余复用成功" : "部分菜单复用失败";
-            return R.fail("批量复用失败，" + msg);
+            String errorMsg = "";
+            if (sb.length() > 0) {
+                // 移除最后一个顿号
+                String existMenus = sb.substring(0, sb.length() - 1);
+                errorMsg = String.format("[%s]已存在于明日菜单中，其余菜单复用成功（部分可能因ID错误/不存在失败）", existMenus);
+            } else {
+                errorMsg = "菜单复用失败，原因：部分菜单ID格式错误/菜单不存在/新增操作失败";
+            }
+            return R.fail("批量复用至明日菜单失败，" + errorMsg);
         }
     }
 }
