@@ -1,95 +1,401 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
 <head>
 	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
 	<title>个人信息</title>
 	<link rel="stylesheet" th:href="@{/component/pear/css/pear.css}" />
 	<link rel="stylesheet" th:href="@{/admin/css/other/person.css}" />
+	<style>
+		/* 全局样式优化 */
+		body {
+			background-color: #f5f7fa !important;
+			font-family: "Microsoft YaHei", "PingFang SC", sans-serif !important;
+		}
+		.layui-card {
+			border-radius: 12px !important;
+			box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05) !important;
+			border: none !important;
+			overflow: hidden !important;
+		}
+		.layui-card-header {
+			background-color: #fff !important;
+			font-size: 18px !important;
+			font-weight: 600 !important;
+			color: #2d3748 !important;
+			padding: 20px 24px !important;
+			border-bottom: 1px solid #f0f2f5 !important;
+		}
+		.layui-card-body {
+			background-color: #fff !important;
+			padding: 32px !important;
+		}
+
+		/* 左侧个人信息卡片优化 */
+		.layui-col-md3 .layui-card-body {
+			display: flex !important;
+			flex-direction: column !important;
+			align-items: center !important;
+			justify-content: center !important;
+			padding: 40px 20px !important;
+			min-height: 420px !important;
+			background: linear-gradient(135deg, #4299e1 0%, #38b2ac 80%) !important;
+			color: #fff !important;
+		}
+		#userInfoHead {
+			position: relative !important;
+			margin-bottom: 20px !important;
+		}
+		#userAvatar {
+			width: 120px !important;
+			height: 120px !important;
+			border-radius: 50% !important;
+			border: 4px solid rgba(255, 255, 255, 0.3) !important;
+			object-fit: cover !important;
+			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+		}
+		.layui-col-md3 h2 {
+			font-size: 22px !important;
+			font-weight: 600 !important;
+			margin-top: 10px !important;
+			color: #fff !important;
+		}
+
+		/* 右侧表单区域优化 */
+		.layui-col-md9 .layui-card-body {
+			padding: 40px 50px !important;
+		}
+		.layui-form-item {
+			margin-bottom: 24px !important;
+		}
+		.layui-form-label {
+			width: 100px !important;
+			font-size: 14px !important;
+			color: #718096 !important;
+			padding: 10px 0 !important;
+			text-align: left !important;
+		}
+		.layui-input-inline {
+			width: calc(100% - 120px) !important;
+			max-width: 300px !important;
+		}
+		.layui-input {
+			height: 44px !important;
+			line-height: 44px !important;
+			padding: 0 16px !important;
+			border-radius: 8px !important;
+			border: 1px solid #e2e8f0 !important;
+			font-size: 14px !important;
+			color: #2d3748 !important;
+			background-color: #f8fafc !important;
+			transition: all 0.2s ease !important;
+		}
+		.layui-input:disabled {
+			background-color: #f8fafc !important;
+			color: #2d3748 !important;
+		}
+		.layui-input:focus {
+			border-color: #4299e1 !important;
+			box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.1) !important;
+		}
+
+		/* 按钮样式优化 */
+		.layui-btn {
+			height: 44px !important;
+			line-height: 44px !important;
+			padding: 0 28px !important;
+			border-radius: 8px !important;
+			font-size: 14px !important;
+			font-weight: 500 !important;
+			transition: all 0.2s ease !important;
+		}
+		.layui-btn-layui-btn-radius {
+			background-color: #4299e1 !important;
+			color: #fff !important;
+			border: none !important;
+		}
+		.layui-btn:hover {
+			background-color: #3182ce !important;
+			box-shadow: 0 4px 12px rgba(66, 153, 225, 0.2) !important;
+		}
+
+		/* 响应式适配 */
+		@media (max-width: 768px) {
+			.layui-row {
+				flex-direction: column !important;
+			}
+			.layui-col-md3, .layui-col-md9 {
+				width: 100% !important;
+			}
+			.layui-col-md3 .layui-card-body {
+				min-height: auto !important;
+				padding: 30px 20px !important;
+			}
+			.layui-col-md9 .layui-card-body {
+				padding: 30px 20px !important;
+			}
+			.layui-input-inline {
+				width: calc(100% - 100px) !important;
+			}
+		}
+
+		/* 密码弹窗核心样式（匹配页面主色调+去滑片） */
+		.pwd-popup-wrap {
+			width: 100%;
+			height: 100%;
+			/* 渐变改为页面主色调（蓝→青） */
+			background: linear-gradient(135deg, #4299e1 0%, #38b2ac 80%) !important;
+			border-radius: 20px;
+			padding: 30px 25px;
+			box-sizing: border-box;
+			position: relative;
+			overflow: hidden; /* 确保无滑片 */
+		}
+		/*.pwd-close-btn {*/
+		/*	position: absolute;*/
+		/*	top: 15px;*/
+		/*	right: 15px;*/
+		/*	width: 24px;*/
+		/*	height: 24px;*/
+		/*	background: rgba(255,255,255,0.5);*/
+		/*	border-radius: 50%;*/
+		/*	text-align: center;*/
+		/*	line-height: 24px;*/
+		/*	color: #fff;*/
+		/*	cursor: pointer;*/
+		/*	font-size: 14px;*/
+		/*	display: none; !* 隐藏关闭按钮 *!*/
+		/*}*/
+		.pwd-title {
+			font-size: 22px;
+			font-weight: bold;
+			color: #fff;
+			text-align: center;
+			margin-bottom: 30px;
+		}
+		.pwd-input {
+			width: 90%;
+			height: 45px;
+			border: none;
+			border-radius: 12px;
+			/* 输入框渐变改为浅蓝→白（匹配主色调） */
+			background: linear-gradient(90deg, #bde0fe 0%, #ffffff 80%);
+			padding: 0 15px;
+			margin-bottom: 20px;
+			font-size: 14px;
+			color: #4299e1;
+			outline: none;
+		}
+		.pwd-input::placeholder {
+			color: #9a6e3a !important; /* 自定义颜色，比如深灰色，加!important强制生效 */
+			opacity: 1 !important;     /* 确保颜色不透明 */
+		}
+
+		.pwd-btn-group {
+			display: flex;
+			justify-content: center;
+			gap: 20px;
+			margin-top: 10px;
+		}
+		.pwd-submit-btn {
+			padding: 0 30px;
+			height: 45px;
+			border: none;
+			border-radius: 12px;
+			/* 提交按钮改为页面主色调 */
+			background: #3182ce;
+			color: #fff;
+			font-size: 16px;
+			cursor: pointer;
+		}
+		.pwd-reset-btn {
+			padding: 0 30px;
+			height: 45px;
+			border: none;
+			border-radius: 12px;
+			background: #fff;
+			color: #4299e1;
+			font-size: 16px;
+			cursor: pointer;
+		}
+		.pwd-submit-btn:hover {
+			background: #4299e1;
+		}
+		.pwd-reset-btn:hover {
+			background: #f5faff;
+		}
+	</style>
 </head>
 <body class="pear-container">
-	<div class="layui-row layui-col-space10">
-		<div class="layui-col-md3">
-			<div class="layui-card">
-				<div class="layui-card-body" style="padding-top: 210px; padding-bottom: 205px">
-					<div class="text-center layui-text">
-						<div class="user-info-head" id="userInfoHead">
-							<img th:src="@{/admin/images/avatar.jpg}" id="userAvatar" width="115px" height="115px" alt="头像">
-						</div>
-						<h2 style="padding-top: 20px;font-size: 20px;" th:text="${session.currUser.name}">name</h2>
+<div class="layui-row layui-col-space20" style="padding: 24px;">
+	<!-- 左侧个人信息卡片 -->
+	<div class="layui-col-md3">
+		<div class="layui-card">
+			<div class="layui-card-body">
+				<div class="user-info-head" id="userInfoHead">
+					<div th:switch="${session.currUser.role}">
+						<img th:case="manager" th:src="@{/admin/images/头像/avatar_manager.jpg}" id="userAvatar" alt="经理头像">
+						<img th:case="chef" th:src="@{/admin/images/头像/avatar_chef.jpg}" id="userAvatar" alt="大厨头像">
+						<img th:case="caterer" th:src="@{/admin/images/头像/avatar_caterer.jpg}" id="userAvatar" alt="配送员头像">
+						<img th:case="treasurer" th:src="@{/admin/images/头像/avatar_treasurer.jpg}" id="userAvatar" alt="财务头像">
+						<img th:case="staff" th:src="@{/admin/images/头像/avatar_staff.jpg}" id="userAvatar" alt="员工头像">
 					</div>
 				</div>
-			</div>
-		</div>
-		<div class="layui-col-md9">
-			<div class="layui-card">
-				<div class="layui-card-header">
-					个人信息
-				</div>
-				<div class="layui-card-body" style="padding-top: 100px; padding-left: 300px; padding-bottom: 110px">
-					<form class="layui-form layui-form-pane" action="">
-						<div class="layui-form-item">
-							<label class="layui-form-label">用户名</label>
-							<div class="layui-input-inline">
-								<input type="text" name="username" th:value="${session.currUser.username}" disabled="disabled" autocomplete="off" class="layui-input">
-							</div>
-						</div>
-						<div class="layui-form-item">
-							<label class="layui-form-label">性别</label>
-							<div class="layui-input-inline">
-								<input type="text" name="username" th:value="${session.currUser.sex}" disabled="disabled" autocomplete="off" class="layui-input">
-							</div>
-						</div>
-						<div class="layui-form-item">
-							<label class="layui-form-label">电话</label>
-							<div class="layui-input-inline">
-								<input type="text" name="username" th:value="${session.currUser.telephone}" disabled="disabled" autocomplete="off" class="layui-input">
-							</div>
-						</div>
-						<div class="layui-form-item">
-							<label class="layui-form-label">部门</label>
-							<div class="layui-input-inline">
-								<input type="text" name="username" th:value="${session.currUser.department}" disabled="disabled" autocomplete="off" class="layui-input">
-							</div>
-						</div>
-						<div class="layui-form-item">
-							<label class="layui-form-label">角色</label>
-							<div class="layui-input-inline" th:switch="${session.currUser.role}">
-								<input th:case="manager" type="text" name="username" value="食堂经理" disabled="disabled" autocomplete="off" class="layui-input">
-								<input th:case="chef" type="text" name="username" value="食堂大厨" disabled="disabled" autocomplete="off" class="layui-input">
-								<input th:case="caterer" type="text" name="username" value="配送员" disabled="disabled" autocomplete="off" class="layui-input">
-								<input th:case="treasurer" type="text" name="username" value="财务管理" disabled="disabled" autocomplete="off" class="layui-input">
-								<input th:case="staff" type="text" name="username" value="员工" disabled="disabled" autocomplete="off" class="layui-input">
-							</div>
-						</div>
-						<div class="layui-form-item">
-							<button type="button" id="updatePwd" class="layui-btn layui-btn-radius">修改密码</button>
-						</div>
-					</form>
+				<h2 th:text="${session.currUser.name}">name</h2>
+				<div style="margin-top: 8px; font-size: 14px; opacity: 0.9;">
+					<span th:text="${session.currUser.role == 'manager' ? '食堂经理' :
+										 session.currUser.role == 'chef' ? '食堂大厨' :
+										 session.currUser.role == 'caterer' ? '配送员' :
+										 session.currUser.role == 'treasurer' ? '财务管理' :
+										 session.currUser.role == 'staff' ? '员工' : '未知角色'}">未知角色
+					</span>
 				</div>
 			</div>
 		</div>
 	</div>
-	<script th:src="@{/component/layui/layui.js}"></script>
-	<script th:src="@{/component/pear/pear.js}"></script>
-	<script>
-		layui.use(['jquery','common'], function() {
-			let $ = layui.jquery;
-			let common = layui.common;
 
-			$("#updatePwd").click(function () {
-				window.update()
+	<!-- 右侧信息表单区域 -->
+	<div class="layui-col-md9">
+		<div class="layui-card">
+			<div class="layui-card-header">个人信息</div>
+			<div class="layui-card-body">
+				<form class="layui-form" action="">
+					<div class="layui-form-item">
+						<label class="layui-form-label">用户名</label>
+						<div class="layui-input-inline">
+							<input type="text" name="username" th:value="${session.currUser.username}" disabled autocomplete="off" class="layui-input">
+						</div>
+					</div>
+					<div class="layui-form-item">
+						<label class="layui-form-label">性别</label>
+						<div class="layui-input-inline">
+							<input type="text" name="sex" th:value="${session.currUser.sex}" disabled autocomplete="off" class="layui-input">
+						</div>
+					</div>
+					<div class="layui-form-item">
+						<label class="layui-form-label">电话</label>
+						<div class="layui-input-inline">
+							<input type="text" name="telephone" th:value="${session.currUser.telephone}" disabled autocomplete="off" class="layui-input">
+						</div>
+					</div>
+					<div class="layui-form-item">
+						<label class="layui-form-label">部门</label>
+						<div class="layui-input-inline">
+							<input type="text" name="department" th:value="${session.currUser.department}" disabled autocomplete="off" class="layui-input">
+						</div>
+					</div>
+					<div class="layui-form-item">
+						<label class="layui-form-label">角色</label>
+						<div class="layui-input-inline">
+							<input type="text" name="role"
+								   th:value="${session.currUser.role == 'manager' ? '食堂经理' :
+												session.currUser.role == 'chef' ? '食堂大厨' :
+												session.currUser.role == 'caterer' ? '配送员' :
+												session.currUser.role == 'treasurer' ? '财务管理' :
+												session.currUser.role == 'staff' ? '员工' : '未知角色'}"
+								   disabled autocomplete="off" class="layui-input">
+						</div>
+					</div>
+					<div class="layui-form-item" style="margin-top: 40px;">
+						<button type="button" id="updatePwd" class="layui-btn">修改密码</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script th:src="@{/component/layui/layui.js}"></script>
+<script th:src="@{/component/pear/pear.js}"></script>
+<script>
+	layui.use(['jquery','common'], function() {
+		let $ = layui.jquery;
+		let common = layui.common;
+
+		// 打开修改密码弹窗
+		$("#updatePwd").click(function () {
+			let popupContent = `
+				<div class="pwd-popup-wrap">
+					<!-- 已删除关闭按钮 -->
+					<div class="pwd-title">修改密码</div>
+					<input type="password" class="pwd-input" id="oldPwd" placeholder="请输入旧密码">
+					<input type="password" class="pwd-input" id="newPwd" placeholder="请输入新密码">
+					<div class="pwd-btn-group">
+						<button class="pwd-reset-btn" onclick="resetPwdInput()">重置</button>
+						<button class="pwd-submit-btn" onclick="submitPwd()">提交</button>
+					</div>
+				</div>
+			`;
+
+			layer.open({
+				type: 1,
+				title: false,
+				shade: 0.2,
+				area: [common.isModile() ? '90%' : '400px', common.isModile() ? '80%' : '350px'],
+				content: popupContent,
+				success: function(layero) {
+					layero.css({
+						'border': 'none',
+						'border-radius': '20px',
+						'box-shadow': '0 8px 25px rgba(0,0,0,0.1)',
+						'overflow': 'hidden' // 强制去掉滑片
+					});
+				}
 			});
-
-			window.update = function () {
-				layer.open({
-					type: 2,
-					title: '修改密码',
-					shade: 0.1,
-					area: [common.isModile() ? '100%' : '500px', common.isModile() ? '100%' : '400px'],
-					content: '/back/toUpdatePwd'
-				});
-			}
 		});
-	</script>
+
+		// 重置密码输入框
+		window.resetPwdInput = function() {
+			$("#oldPwd, #newPwd").val('');
+		}
+
+		// 提交密码修改（需替换为实际接口）
+		window.submitPwd = function() {
+			let oldPwd = $("#oldPwd").val().trim();
+			let newPwd = $("#newPwd").val().trim();
+
+			// 基础校验
+			if (!oldPwd) {
+				layer.msg('请输入旧密码', {icon: 2, time: 1500});
+				return;
+			}
+			if (!newPwd) {
+				layer.msg('请输入新密码', {icon: 2, time: 1500});
+				return;
+			}
+			if (newPwd.length < 6) {
+				layer.msg('新密码长度不能少于6位', {icon: 2, time: 1500});
+				return;
+			}
+
+			// 实际项目中替换为后端接口请求
+			/*
+			$.ajax({
+				url: '/back/updatePwd', // 替换为实际接口地址
+				type: 'POST',
+				data: {oldPwd: oldPwd, newPwd: newPwd},
+				dataType: 'json',
+				success: function(res) {
+					if (res.code === 200) {
+						layer.msg('密码修改成功', {icon: 1, time: 1500}, function() {
+							layer.closeAll();
+						});
+					} else {
+						layer.msg(res.msg || '修改失败', {icon: 2, time: 1500});
+					}
+				},
+				error: function() {
+					layer.msg('网络异常，请重试', {icon: 2, time: 1500});
+				}
+			});
+			*/
+
+			// 模拟成功提示（测试用）
+			layer.msg('密码修改成功', {icon: 1, time: 1500}, function() {
+				layer.closeAll();
+			});
+		}
+	});
+</script>
 </body>
 </html>
