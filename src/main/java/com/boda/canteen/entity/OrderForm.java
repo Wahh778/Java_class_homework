@@ -26,4 +26,6 @@ public class OrderForm implements Serializable {
     private Date orderTime;
 
     private Long orderPrice;
+
+    private String workInformation;
 }

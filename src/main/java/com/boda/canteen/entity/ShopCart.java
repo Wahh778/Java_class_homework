@@ -30,4 +30,6 @@ public class ShopCart implements Serializable {
     private String picture;
 
     private Long userId;
+
+    private String workInformation;
 }

@@ -122,6 +122,7 @@ public class OrderController {
         orderForm.setName(currUser.getUsername());
         orderForm.setOrderTime(now);
         orderForm.setTelephone(currUser.getTelephone());
+        orderForm.setWorkInformation(currUser.getWorkInformation());
 
         // 保存主订单
         boolean saveMainOrder = orderFormService.save(orderForm);
@@ -314,7 +315,7 @@ public class OrderController {
                 rowIndex++;
 
                 writer.merge(rowIndex, rowIndex, 0, 5,
-                        "工位信息：" + o.getName(), false);
+                        "工位信息：" + o.getWorkInformation(), false);
                 writer.getCell(0, rowIndex).setCellStyle(borderStyle);
                 rowIndex++;
 
@@ -369,7 +370,7 @@ public class OrderController {
 
                 // 底部信息
                 writer.merge(rowIndex, rowIndex, 0, 5,
-                        "送餐员：XXX        打印时间：" +
+                        "送餐员：caterer        打印时间：" +
                                 DateUtil.format(new Date(), "yyyy-MM-dd HH:mm:ss"),
                         false);
                 writer.getCell(0, rowIndex).setCellStyle(borderStyle);

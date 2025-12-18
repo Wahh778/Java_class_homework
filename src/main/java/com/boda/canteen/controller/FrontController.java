@@ -149,6 +149,8 @@ public class FrontController {
     public String toUserCenter(HttpServletRequest request){
         MyUser currUser = (MyUser) request.getSession().getAttribute("currUser");
         Long userId = currUser.getUserId();
+//        String workInformation = currUser.getWorkInformation();
+//        request.getSession().setAttribute("workInformation", workInformation);
 
         // 加载今日订单数据
         Date begin = DateUtil.beginOfDay(DateUtil.date());
