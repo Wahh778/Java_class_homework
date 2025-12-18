@@ -21,9 +21,9 @@ import java.util.Date;
 /**
  * 用户点餐拦截器
  * 可点单时间：
- *  1. 上一日mealStartTime → 本日orderDeadline
- *  2. 本日mealStartTime → 明日orderDeadline
- * 拦截时间：本日orderDeadline → 本日mealStartTime
+ *  1. 上一日mealStartTime → 本日orderDeadline（包含边界）
+ *  2. 本日mealStartTime → 明日orderDeadline（包含边界）
+ * 拦截时间：本日orderDeadline → 本日mealStartTime（包含边界，完全禁止点单）
  */
 @Slf4j
 @Component
@@ -48,22 +48,21 @@ public class StaffOrderInterceptor implements HandlerInterceptor {
         LocalDate today = LocalDate.now();
         LocalDate yesterday = today.minusDays(1);
         LocalDate tomorrow = today.plusDays(1);
-        ZoneId zoneId = ZoneId.systemDefault();
 
-        // 可点单时段1：上一日mealStartTime → 本日orderDeadline
+        // 可点单时段1：上一日mealStartTime → 本日orderDeadline（包含边界）
         Date period1Start = MyTimeUtils.getDateWithTime(yesterday, mealStartTimeStr);
         Date period1End = MyTimeUtils.getDateWithTime(today, orderDeadlineStr);
 
-        // 可点单时段2：本日mealStartTime → 明日orderDeadline
+        // 可点单时段2：本日mealStartTime → 明日orderDeadline（包含边界）
         Date period2Start = MyTimeUtils.getDateWithTime(today, mealStartTimeStr);
         Date period2End = MyTimeUtils.getDateWithTime(tomorrow, orderDeadlineStr);
 
         // 当前时间
         Date currentTime = new Date();
 
-        // 4. 判断是否在可点单时间范围内
-        boolean isInPeriod1 = currentTime.after(period1Start) && currentTime.before(period1End);
-        boolean isInPeriod2 = currentTime.after(period2Start) && currentTime.before(period2End);
+        // 4. 判断是否在可点单时间范围内（包含等于边界的情况）
+        boolean isInPeriod1 = !currentTime.before(period1Start) && !currentTime.after(period1End);
+        boolean isInPeriod2 = !currentTime.before(period2Start) && !currentTime.after(period2End);
         boolean canOrder = isInPeriod1 || isInPeriod2;
 
         // 5. 拦截逻辑：不可点单则返回提示
@@ -71,20 +70,16 @@ public class StaffOrderInterceptor implements HandlerInterceptor {
             // 拼接可点单时间提示
             String orderableTime = String.format(
                     "可点单时间：%s ~ %s 或 %s ~ %s",
-                    DateUtil.formatDateTime(period1Start),
-                    DateUtil.formatDateTime(period1End),
-                    DateUtil.formatDateTime(period2Start),
-                    DateUtil.formatDateTime(period2End)
+                    DateUtil.format(period1Start, "HH:mm:ss"),
+                    DateUtil.format(period1End, "HH:mm:ss"),
+                    DateUtil.format(period2Start, "HH:mm:ss"),
+                    DateUtil.format(period2End, "HH:mm:ss")
             );
-            String forbiddenMsg = String.format("当前时间不允许点餐（拦截时段：%s ~ %s），%s",
-                    DateUtil.formatDateTime(period1End), // 本日orderDeadline
-                    DateUtil.formatDateTime(period2Start), // 本日mealStartTime
-                    orderableTime
-            );
-            log.warn("点餐拦截：当前时间{}，拦截时段{}~{}",
+            String forbiddenMsg = String.format("当前处于配送时间段，禁止点单！%s", orderableTime);
+            log.warn("点餐拦截：当前时间{}，配送时段{}~{}",
                     DateUtil.formatDateTime(currentTime),
-                    DateUtil.formatDateTime(period1End),
-                    DateUtil.formatDateTime(period2Start));
+                    DateUtil.format(period1End, "HH:mm:ss"),
+                    DateUtil.format(period2Start, "HH:mm:ss"));
             ResponseUtil.out(response, R.fail(forbiddenMsg));
             return false;
         }

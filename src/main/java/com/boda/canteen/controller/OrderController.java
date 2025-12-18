@@ -11,24 +11,25 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 import com.boda.canteen.common.MyTimeUtils;
 import com.boda.canteen.common.R;
-import com.boda.canteen.entity.BlanketOrder;
-import com.boda.canteen.entity.MyUser;
-import com.boda.canteen.entity.OrderForm;
-import com.boda.canteen.entity.ShopCart;
+import com.boda.canteen.entity.*;
 import com.boda.canteen.exception.CustomException;
 import com.boda.canteen.security.service.BlanketOrderService;
 import com.boda.canteen.security.service.OrderFormService;
 import com.boda.canteen.security.service.ShopCartService;
+import com.boda.canteen.security.service.TimeConfigService;
 import io.jsonwebtoken.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import cn.hutool.poi.excel.ExcelUtil;
 import cn.hutool.poi.excel.ExcelWriter;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -46,100 +47,128 @@ public class OrderController {
     @Autowired
     private BlanketOrderService blanketOrderService;
 
+    // 新增：注入时间配置服务
+    @Autowired
+    private TimeConfigService timeConfigService;
+
+
     /**
      * 订单提交接口
+     * 核心规则：
+     * 1. 配送时间段（本日orderDeadline ~ mealStartTime）：完全禁止点单
+     * 2. 非配送时间段：允许重复提交，覆盖旧订单（保证当日仅1单）
      */
     @PostMapping("/submit")
+    @Transactional(rollbackFor = Exception.class) // 事务保障，防止数据不一致
     public R<String> submit(@RequestBody OrderForm orderForm, HttpServletRequest request){
-        // 1. 空值校验：防止session中用户信息为空
+        // ===== 1. 基础校验 =====
         MyUser currUser = (MyUser) request.getSession().getAttribute("currUser");
         if (currUser == null || currUser.getUserId() == null) {
             throw new CustomException("用户未登录，请先登录");
         }
-
-        // 2. 获取用户ID（只定义一次）
         Long userId = currUser.getUserId();
 
-        // 3. 检查当前用户当天是否已提交过订单
-        Date begin = DateUtil.beginOfDay(DateUtil.date());
-        Date end = DateUtil.endOfDay(DateUtil.date());
-        LambdaQueryWrapper<OrderForm> orderQueryWrapper = new LambdaQueryWrapper<>();
-        orderQueryWrapper.eq(OrderForm::getUserId, userId)
-                .between(OrderForm::getOrderTime, begin, end);
-        long existingOrderCount = orderFormService.count(orderQueryWrapper);
-        if (existingOrderCount > 0) {
-            throw new CustomException("每个员工每天只能生成一张订单");
+        // ===== 2. 双重校验：是否处于配送时段（防止拦截器失效） =====
+        TimeConfig timeConfig = timeConfigService.getCurrentConfig();
+        String orderDeadlineStr = timeConfig.getOrderDeadline() == null ? "09:00:00" : timeConfig.getOrderDeadline();
+        String mealStartTimeStr = timeConfig.getMealStartTime() == null ? "11:30:00" : timeConfig.getMealStartTime();
+
+        LocalDate today = LocalDate.now();
+        Date now = new Date();
+        Date todayOrderDeadline = MyTimeUtils.getDateWithTime(today, orderDeadlineStr);
+        Date todayMealStartTime = MyTimeUtils.getDateWithTime(today, mealStartTimeStr);
+
+        // 判断是否在配送时段（orderDeadline <= 当前时间 <= mealStartTime）
+        boolean isInDeliveryPeriod = !now.before(todayOrderDeadline) && !now.after(todayMealStartTime);
+        if (isInDeliveryPeriod) {
+            throw new CustomException("当前处于配送时间段，禁止提交订单！");
         }
 
-        // ========== 关键修复：删除了重复定义的 Long userId = currUser.getUserId(); ==========
-
-        // 4. 获取当前用户的购物车信息
-        LambdaQueryWrapper<ShopCart> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(ShopCart::getUserId, userId);
-        List<ShopCart> shopCartList = shopCartService.list(queryWrapper);
-
-        // 5. 校验购物车是否为空
+        // ===== 3. 购物车校验 =====
+        LambdaQueryWrapper<ShopCart> cartQueryWrapper = new LambdaQueryWrapper<>();
+        cartQueryWrapper.eq(ShopCart::getUserId, userId);
+        List<ShopCart> shopCartList = shopCartService.list(cartQueryWrapper);
         if (shopCartList == null || shopCartList.isEmpty()) {
             throw new CustomException("购物车为空，无法提交订单");
         }
 
-        // 6. 记录当前时间
-        Date now = DateUtil.date();
+        // ===== 4. 非配送时段：删除当日旧订单（主单+明细） =====
+        Date beginOfDay = DateUtil.beginOfDay(now);
+        Date endOfDay = DateUtil.endOfDay(now);
+        LambdaQueryWrapper<OrderForm> oldOrderQuery = new LambdaQueryWrapper<>();
+        oldOrderQuery.eq(OrderForm::getUserId, userId)
+                .between(OrderForm::getOrderTime, beginOfDay, endOfDay);
+        List<OrderForm> oldOrders = orderFormService.list(oldOrderQuery);
 
-        // 7. 补齐订单信息
-        // 优化：使用更规范的订单ID生成方式（避免重复）
-        long orderId = RandomUtil.randomLong(100000L, 999999999999L);
-        orderForm.setOrderId(orderId);
+        if (!oldOrders.isEmpty()) {
+            for (OrderForm oldOrder : oldOrders) {
+                Long oldOrderId = oldOrder.getOrderId();
+                // 删除旧订单明细
+                LambdaQueryWrapper<BlanketOrder> blanketQuery = new LambdaQueryWrapper<>();
+                blanketQuery.eq(BlanketOrder::getOrderId, oldOrderId);
+                blanketOrderService.remove(blanketQuery);
+                // 删除旧主订单
+                orderFormService.removeById(oldOrderId);
+                log.info("用户{}删除当日旧订单，订单号：{}", userId, oldOrderId);
+            }
+        }
+
+        // ===== 5. 生成新订单 =====
+        // 生成唯一订单ID
+        long newOrderId = RandomUtil.randomLong(100000L, 999999999999L);
+        // 补齐订单信息
+        orderForm.setOrderId(newOrderId);
         orderForm.setUserId(userId);
         orderForm.setName(currUser.getUsername());
         orderForm.setOrderTime(now);
         orderForm.setTelephone(currUser.getTelephone());
-//        orderForm.setWorkInformation(currUser.getWork_information());
 
-        // 8. 保存主订单（建议加事务，防止部分保存失败）
-        boolean res = orderFormService.save(orderForm);
-        if (!res) {
-            log.error("用户{}提交订单失败：主订单保存失败", userId);
-            throw new CustomException("订单提交失败");
+        // 保存主订单
+        boolean saveMainOrder = orderFormService.save(orderForm);
+        if (!saveMainOrder) {
+            log.error("用户{}主订单保存失败，订单号：{}", userId, newOrderId);
+            throw new CustomException("订单提交失败：主订单保存失败");
         }
 
-        // 9. 保存订单明细
+        // ===== 6. 保存订单明细 =====
         try {
-            for (ShopCart sc : shopCartList) {
+            for (ShopCart cart : shopCartList) {
                 BlanketOrder blanketOrder = new BlanketOrder();
-                blanketOrder.setName(sc.getName());
-                blanketOrder.setUnit(sc.getUnit());
-                blanketOrder.setWeight(sc.getWeight());
-                blanketOrder.setPrice(sc.getPrice());
-                blanketOrder.setTotalPrice(sc.getTotalPrice());
-//                blanketOrder.setWorkInformation(sc.getWorkInformation());
-                blanketOrder.setOrderId(orderId);
+                blanketOrder.setName(cart.getName());
+                blanketOrder.setUnit(cart.getUnit());
+                blanketOrder.setWeight(cart.getWeight());
+                blanketOrder.setPrice(cart.getPrice());
+                blanketOrder.setTotalPrice(cart.getTotalPrice());
+                blanketOrder.setOrderId(newOrderId);
                 blanketOrder.setCreateTime(now);
-                boolean ans = blanketOrderService.save(blanketOrder);
-                if (!ans) {
-                    throw new CustomException("订单明细保存失败：" + sc.getName());
+
+                boolean saveDetail = blanketOrderService.save(blanketOrder);
+                if (!saveDetail) {
+                    throw new CustomException("菜品【" + cart.getName() + "】明细保存失败");
                 }
             }
         } catch (Exception e) {
-            // 回滚：如果明细保存失败，删除已保存的主订单
-            orderFormService.removeById(orderId);
-            log.error("用户{}订单明细保存失败，已回滚主订单", userId, e);
+            // 明细保存失败，回滚主订单
+            orderFormService.removeById(newOrderId);
+            log.error("用户{}订单明细保存失败，已回滚主订单，订单号：{}", userId, newOrderId, e);
             throw new CustomException("订单提交失败：" + e.getMessage());
         }
 
-        // 10. 清空当前用户的购物车
-        LambdaQueryWrapper<ShopCart> shopCartLambdaQueryWrapper = new LambdaQueryWrapper<>();
-        shopCartLambdaQueryWrapper.eq(ShopCart::getUserId, userId);
-        boolean b = shopCartService.remove(shopCartLambdaQueryWrapper);
+        // ===== 7. 清空购物车 =====
+        LambdaQueryWrapper<ShopCart> clearCartQuery = new LambdaQueryWrapper<>();
+        clearCartQuery.eq(ShopCart::getUserId, userId);
+        boolean clearCart = shopCartService.remove(clearCartQuery);
 
-        if (b) {
-            log.info("用户{}订单提交成功，订单号：{}", userId, orderId);
-            return R.success("订单提交成功");
+        // ===== 8. 返回结果 =====
+        if (clearCart) {
+            log.info("用户{}订单提交成功，订单号：{}", userId, newOrderId);
+            return R.success(oldOrders.isEmpty() ? "订单提交成功" : "订单已更新为最新版本");
         } else {
-            log.warn("用户{}订单提交成功，但购物车清空失败，订单号：{}", userId, orderId);
-            return R.fail("订单提交成功，购物车清空失败");
+            log.warn("用户{}订单提交成功，但购物车清空失败，订单号：{}", userId, newOrderId);
+            return R.fail(oldOrders.isEmpty() ? "订单提交成功，购物车清空失败" : "订单已更新，购物车清空失败");
         }
     }
+
 
     /**
      * 订单分页接口
