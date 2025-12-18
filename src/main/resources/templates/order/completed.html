@@ -151,7 +151,22 @@
                 title: '订单详情',
                 shade: 0.1,
                 area: ['800px', '400px'],
-                content: '/back/toDetails/' + obj.data['orderId']
+                content: '/back/toDetails/' + obj.data['orderId'],
+                success: function(layero) {
+                    // 毛玻璃样式
+                    layero.css({
+                        'background': 'rgba(255, 255, 255, 0.85)',
+                        'backdrop-filter': 'blur(12px)',
+                        '-webkit-backdrop-filter': 'blur(12px)',
+                        'border-radius': '20px',
+                        'box-shadow': '0 6px 20px rgba(0, 0, 0, 0.25)',
+                        'border': '1px solid rgba(255, 255, 255, 0.9)'
+                    });
+                    layero.find('iframe').css({
+                        'background': 'transparent',
+                        'border-radius': '18px'
+                    });
+                }
             });
         }
 
@@ -164,9 +179,7 @@
 
         table.on('toolbar(user-table)', function(obj) {
             if (obj.event === 'print') {
-
                 var checkIds = common.checkField(obj, 'orderId');
-
                 if (checkIds === "") {
                     layer.msg("未选中数据", {
                         icon: 3,
@@ -175,31 +188,64 @@
                     return false;
                 }
 
-                layer.confirm('确定批量打印这些订单吗', {
-                    icon: 3,
-                    title: '提示'
-                }, function(index) {
-                    layer.close(index);
-                    let loading = layer.load();
-                    // 创建get请求路径
-                    let downloadUrl = "http://localhost:8088/order/print/" + checkIds;
-                    // 创建a标签
-                    let label = $("<a>");
-                    // 添加属性
-                    label.prop("href",downloadUrl);
-                    // 追加标签
-                    $("body").append(label);
-                    // 点击a标签，为什么要加[0]不懂，不加点击函数不生效
-                    label[0].click();
-                    // 点击后移除标签
-                    label.remove();
-                    layer.close(loading);
-                    layer.msg("打印成功", {
-                        icon: 1,
-                        time: 1000
-                    }, function() {
-                        table.reload('user-table');
-                    });
+                // 批量打印确认弹窗（毛玻璃样式）
+                layer.open({
+                    type: 1,
+                    title: '提示',
+                    shade: 0.1,
+                    area: ['400px', '220px'],
+                    content: `
+                    <div style="padding: 30px; text-align: center; background: transparent;">
+                        <i class="layui-icon layui-icon-question" style="font-size: 30px; color: #FFB800; margin-bottom: 15px;"></i>
+                        <p style="font-size: 14px; color: #333; margin-bottom: 20px;">确定批量打印这些订单吗？</p>
+                        <div style="display: flex; justify-content: center; gap: 20px;">
+                            <button class="pear-btn pear-btn-md pear-btn-default" id="cancelBtn">取消</button>
+                            <button class="pear-btn pear-btn-md pear-btn-primary" id="confirmBtn">确定</button>
+                        </div>
+                    </div>
+                `,
+                    success: function(layero) {
+                        layero.css({
+                            'background': 'rgba(255, 255, 255, 0.85)',
+                            'backdrop-filter': 'blur(12px)',
+                            '-webkit-backdrop-filter': 'blur(12px)',
+                            'border-radius': '20px',
+                            'box-shadow': '0 6px 20px rgba(0, 0, 0, 0.25)',
+                            'border': '1px solid rgba(255, 255, 255, 0.9)'
+                        });
+                        layero.find('.layui-layer-title').css({
+                            'background': 'transparent',
+                            'color': '#333',
+                            'font-weight': '600',
+                            'padding-left': '20px'
+                        });
+                        layero.find('.layui-layer-close').css({
+                            'color': '#666',
+                            'font-size': '18px',
+                            'right': '20px'
+                        });
+
+                        $('#cancelBtn').click(function() {
+                            layer.closeAll();
+                        });
+                        $('#confirmBtn').click(function() {
+                            layer.closeAll();
+                            let loading = layer.load();
+                            let downloadUrl = "http://localhost:8088/order/print/" + checkIds;
+                            let label = $("<a>");
+                            label.prop("href",downloadUrl);
+                            $("body").append(label);
+                            label[0].click();
+                            label.remove();
+                            layer.close(loading);
+                            layer.msg("打印成功", {
+                                icon: 1,
+                                time: 1000
+                            }, function() {
+                                table.reload('user-table');
+                            });
+                        });
+                    }
                 });
             }
         });
