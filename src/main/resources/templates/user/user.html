@@ -41,6 +41,15 @@
 		        <i class="layui-icon layui-icon-add-1"></i>
 		        新增
 		    </button>
+			<!-- 新增批量导入按钮 -->
+			<button class="pear-btn pear-btn-success pear-btn-md" lay-event="batchImport">
+				<i class="layui-icon layui-icon-upload"></i>
+				批量导入
+			</button>
+			<button class="pear-btn pear-btn-danger pear-btn-md" lay-event="batchRemove">
+				<i class="layui-icon layui-icon-delete"></i>
+				批量删除
+			</button>
 		    <button class="pear-btn pear-btn-danger pear-btn-md" lay-event="batchRemove">
 		        <i class="layui-icon layui-icon-delete"></i>
 		        删除
@@ -164,6 +173,16 @@
 					}
 				});
 
+				// table.on('toolbar(user-table)', function(obj) {
+				// 	if (obj.event === 'add') {
+				// 		window.add();
+				// 	} else if (obj.event === 'refresh') {
+				// 		window.refresh();
+				// 	} else if (obj.event === 'batchRemove') {
+				// 		window.batchRemove(obj);
+				// 	}
+				// });
+				// 在table.on('toolbar')中添加批量导入事件
 				table.on('toolbar(user-table)', function(obj) {
 					if (obj.event === 'add') {
 						window.add();
@@ -171,8 +190,101 @@
 						window.refresh();
 					} else if (obj.event === 'batchRemove') {
 						window.batchRemove(obj);
+					} else if (obj.event === 'batchImport') { // 新增批量导入事件
+						window.batchImport();
 					}
 				});
+
+// 批量导入函数
+				window.batchImport = function() {
+					layer.open({
+						type: 1,
+						title: '批量导入员工',
+						area: ['500px', '300px'],
+						content: `
+            <div class="layui-form" style="padding: 20px;">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">Excel文件</label>
+                    <div class="layui-input-block">
+                        <button type="button" class="layui-btn" id="uploadExcel">
+                            <i class="layui-icon">&#xe67c;</i>上传文件
+                        </button>
+                        <div class="layui-upload-list">
+                            <p id="fileInfo" style="margin-top: 10px; color: #666;"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-input-block">
+                        <a href="/user/template" class="layui-btn layui-btn-normal">下载模板</a>
+                        <span style="color: #666; margin-left: 10px;">支持.xlsx格式</span>
+                    </div>
+                </div>
+            </div>
+        `,
+						btn: ['确认导入', '取消'],
+						yes: function(index, layero) {
+							var fileInput = document.getElementById('excelFile');
+							if (!fileInput || fileInput.files.length === 0) {
+								layer.msg('请选择Excel文件', {icon: 2});
+								return;
+							}
+
+							var formData = new FormData();
+							formData.append('file', fileInput.files[0]);
+
+							let loading = layer.load();
+							$.ajax({
+								url: '/user/batchImport',
+								type: 'post',
+								data: formData,
+								contentType: false,
+								processData: false,
+								success: function(result) {
+									layer.close(loading);
+									if (result.code === 200) {
+										layer.msg(result.data, {icon: 1, time: 1000}, function() {
+											layer.close(index);
+											table.reload('user-table');
+										});
+									} else {
+										layer.msg(result.msg, {icon: 2});
+									}
+								},
+								error: function() {
+									layer.close(loading);
+									layer.msg('导入失败', {icon: 2});
+								}
+							});
+						}
+					});
+
+					// 初始化上传组件
+					layui.use('upload', function() {
+						var upload = layui.upload;
+						upload.render({
+							elem: '#uploadExcel',
+							accept: 'file',
+							exts: 'xlsx',
+							auto: false,
+							choose: function(obj) {
+								obj.preview(function(index, file, result) {
+									document.getElementById('fileInfo').innerText = '已选择: ' + file.name;
+									// 创建隐藏input存储文件
+									var input = document.createElement('input');
+									input.type = 'file';
+									input.id = 'excelFile';
+									input.style.display = 'none';
+									// 复制文件对象
+									var dataTransfer = new DataTransfer();
+									dataTransfer.items.add(file);
+									input.files = dataTransfer.files;
+									document.body.appendChild(input);
+								});
+							}
+						});
+					});
+				}
 
 				form.on('submit(user-query)', function(data) {
 					table.reload('user-table', {
