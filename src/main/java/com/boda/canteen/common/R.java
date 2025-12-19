@@ -1,5 +1,7 @@
 package com.boda.canteen.common;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.boda.canteen.entity.BlanketOrder;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -35,5 +37,9 @@ public class R<T> implements Serializable {
 
     public static <T> R<T> fail(String msg) {
         return fail(500, msg, null);
+    }
+
+    public static R<Page<BlanketOrder>> error(String s) {
+        return fail(500, s, null);
     }
 }

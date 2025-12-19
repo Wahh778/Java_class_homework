@@ -18,6 +18,9 @@
         <button class="layui-btn layui-btn-primary" lay-submit lay-filter="resetBtn">
             <i class="layui-icon layui-icon-refresh"></i> 重置
         </button>
+        <button class="layui-btn layui-btn-warm" id="exportExcel">
+            <i class="layui-icon layui-icon-export"></i> 导出Excel
+        </button>
     </div>
 </div>
 <div class="layui-card">
@@ -29,6 +32,7 @@
 
 <script th:src="@{/component/layui/layui.js}"></script>
 <script th:src="@{/component/pear/pear.js}"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 <script>
     layui.use(['table', 'form', 'jquery','common'], function() {
         let table = layui.table;
@@ -36,6 +40,8 @@
         let $ = layui.jquery;
         let common = layui.common;
         let currentUserId = null;
+        let currentName = null;
+        let currentTelephone = null;
 
         function getCurrentMonth() {
             const now = new Date();
@@ -47,6 +53,8 @@
 
         window.initParams = function (params) {
             currentUserId = params.userId;
+            currentName = params.name;
+            currentTelephone = params.telephone;
             const month = getCurrentMonth();//获取当前年月
 
             tableIns.reload({
@@ -76,6 +84,12 @@
                 {
                     title: '数量',
                     field: 'weight',
+                    align: 'center',
+                    width: 100
+                },
+                {
+                    title: '单价',
+                    field: 'price',
                     align: 'center',
                     width: 100
                 },
@@ -145,5 +159,114 @@
         window.refresh = function(param) {
             table.reload('user-table');
         }
+
+        $('#exportExcel').on('click', function () {
+            if (!currentUserId) {
+                layer.msg("缺少用户ID", {icon: 2});
+                return;
+            }
+
+            let month = $('#monthInput').val() || getCurrentMonth();
+
+            $.ajax({
+                url: '/sale/monthlyOrderDetails',
+                method: 'get',
+                data: {
+                    userId: currentUserId,
+                    month: month,
+                    page: 1,
+                    limit: 10000
+                },
+                success: function (res) {
+                    let records = res.data.records;
+                    if (!records || records.length === 0) {
+                        layer.msg('没有数据可导出');
+                        return;
+                    }
+
+                    /* ========= 1. 构造二维数组 ========= */
+                    let aoa = [];
+
+                    function centerText(text, width = 10) {
+                        text = String(text);
+                        let space = width - text.length;
+                        if (space <= 0) return text;
+                        let left = Math.floor(space / 2);
+                        let right = space - left;
+                        return ' '.repeat(left) + text + ' '.repeat(right);
+                    }
+                    // 标题
+                    aoa.push([centerText('员工月度订单汇总', 50)]);
+                    aoa.push([]);
+
+                    // 基本信息（这里用你父组件传下来的 name / telephone）
+                    aoa.push([
+                        `员工：${currentName}`,
+                        '',
+                        `联系电话：${currentTelephone}`,
+                        '',
+                        ''
+                    ]);
+                    aoa.push([`统计月份：${month}`, '', '', '', '']);
+                    aoa.push([]);
+
+                    // 表头
+                    aoa.push(['菜品名称', '计量单位', '数量', '单价', '总计']);
+
+                    // 明细
+                    let total = 0;
+                    records.forEach(item => {
+                        total += Number(item.totalPrice || 0);
+                        aoa.push([
+                            centerText(item.name, 20),
+                            centerText(item.unit, 10),
+                            centerText(item.weight, 8),
+                            centerText(item.price, 8),
+                            centerText(item.totalPrice, 10)
+                        ]);
+
+                    });
+
+                    // 合计
+                    aoa.push([]);
+                    aoa.push(['合计金额', '', '', '', total]);
+
+                    /* ========= 2. 生成 sheet ========= */
+                    let ws = XLSX.utils.aoa_to_sheet(aoa);
+
+                    /* ========= 3. 合并单元格（关键） ========= */
+                    ws['!merges'] = [
+                        // 标题
+                        { s: { r: 0, c: 0 }, e: { r: 0, c: 4 } },
+
+                        // 员工 / 电话
+                        { s: { r: 2, c: 0 }, e: { r: 2, c: 1 } },
+                        { s: { r: 2, c: 2 }, e: { r: 2, c: 3 } },
+
+                        // 统计月份
+                        { s: { r: 3, c: 0 }, e: { r: 3, c: 4 } },
+
+                        // 合计金额
+                        { s: { r: aoa.length - 1, c: 0 }, e: { r: aoa.length - 1, c: 3 } }
+                    ];
+
+                    /* ========= 4. 列宽 ========= */
+                    ws['!cols'] = [
+                        { wch: 20 },
+                        { wch: 12 },
+                        { wch: 10 },
+                        { wch: 10 },
+                        { wch: 12 }
+                    ];
+
+                    /* ========= 5. 导出 ========= */
+                    let wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, '月度订单汇总');
+
+                    XLSX.writeFile(wb, `${currentName}_${month}_月度订单.xlsx`);
+                }
+            });
+        });
+
     });
 </script>

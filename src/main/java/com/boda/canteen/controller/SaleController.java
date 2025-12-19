@@ -1,6 +1,5 @@
 package com.boda.canteen.controller;
 
-import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.StrUtil;
 
@@ -111,56 +110,61 @@ public class SaleController {
     //员工月度订单
     @PreAuthorize("hasAnyRole('treasurer','manager')")
     @GetMapping("/monthlyOrderDetails")
-    public R<Page<OrderForm>> monthlyOrderDetails(
+    public R<Page<BlanketOrder>> monthlyOrderDetails(
             @RequestParam int page,
             @RequestParam int limit,
             @RequestParam(required = false) String userId,
             @RequestParam(required = false) String month) {
+        try {
+            QueryWrapper<OrderForm> orderFormWrapper = new QueryWrapper<>();
 
-        QueryWrapper<OrderForm> orderFormWrapper = new QueryWrapper<>();
+            // userId
+            orderFormWrapper.eq("userId", userId);
 
-        // userId
-        orderFormWrapper.eq("user_id", userId);
+            // 月份范围
+            String monthStart = month + "-01";
+            Date begin = MyTimeUtils.getMonthOfBeginTime(monthStart);
+            Date end = MyTimeUtils.getMonthOfEndTime(monthStart);
+            orderFormWrapper.between("orderTime", begin, end);
 
-        // 月份范围
-        String monthStart = month + "-01";
-        Date begin = MyTimeUtils.getMonthOfBeginTime(monthStart);
-        Date end = MyTimeUtils.getMonthOfEndTime(monthStart);
-        orderFormWrapper.between("order_time", begin, end);
+            // 只查 orderId
+            orderFormWrapper.select("orderId");
+            List<OrderForm> orderForms = orderFormService.list(orderFormWrapper);
 
-        // 只查 orderId
-        orderFormWrapper.select("order_id");
+            // 没有订单，直接返回空分页
+            if (orderForms.isEmpty()) {
+                System.out.println(1111);
+                return R.success(new Page<>(page, limit));
+            }
 
-        List<OrderForm> orderForms = orderFormService.list(orderFormWrapper);
+            List<Long> orderIdList = orderForms.stream()
+                    .map(OrderForm::getOrderId)
+                    .collect(Collectors.toList());
 
-        // 没有订单，直接返回空分页
-        if (orderForms.isEmpty()) {
-            return R.success(new Page<>(page, limit));
+            /* ================= ② 用 orderId 查 blanket_order ================= */
+            Page<BlanketOrder> pageInfo = new Page<>(page, limit);
+            QueryWrapper<BlanketOrder> blanketWrapper = new QueryWrapper<>();
+//            log.info("待查询的orderId列表：{}", orderIdList);
+//            log.info("BlanketOrder查询SQL：{}", blanketWrapper.getCustomSqlSegment());
+            blanketWrapper.in("orderId", orderIdList);
+
+            blanketWrapper
+                    .select(
+                            "name",
+                            "unit",
+                            "price",
+                            "sum(weight) as weight",
+                            "sum(totalPrice) as totalPrice"
+                    )
+                    .groupBy("name", "unit");
+
+            blanketOrderService.page(pageInfo, blanketWrapper);
+
+            return R.success(pageInfo);
+        } catch (Exception e) {
+            log.error("月度订单详情查询异常", e); // 打印完整异常栈
+            return R.error("查询失败：" + e.getMessage()); // 给前端返回异常信息
         }
-
-        List<Long> orderIdList = orderForms.stream()
-                .map(OrderForm::getOrderId)
-                .collect(Collectors.toList());
-
-        /* ================= ② 用 orderId 查 blanket_order ================= */
-
-        Page<BlanketOrder> pageInfo = new Page<>(page, limit);
-        QueryWrapper<BlanketOrder> blanketWrapper = new QueryWrapper<>();
-
-        blanketWrapper.in("order_id", orderIdList);
-
-        blanketWrapper
-                .select(
-                        "name",
-                        "unit",
-                        "sum(weight) as weight",
-                        "sum(total_price) as totalPrice"
-                )
-                .groupBy("name", "unit");
-
-        blanketOrderService.page(pageInfo, blanketWrapper);
-
-        return R.success(pageInfo);
     }
 
 

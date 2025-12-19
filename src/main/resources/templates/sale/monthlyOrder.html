@@ -56,17 +56,17 @@
         let $ = layui.jquery;
         let common = layui.common;
 
-        function getCurrentYearMonth() {
-            const now = new Date();
-            const year = now.getFullYear();
-            // 月份补零（1月是0，所以要+1，且小于10时补0）
-            const month = (now.getMonth() + 1).toString().padStart(2, '0');
-            return `${year}-${month}`;
-        }
-        // 页面加载后赋值
-        $(function() {
-            $('#monthInput').val(getCurrentYearMonth());
-        });
+        // function getCurrentYearMonth() {
+        //     const now = new Date();
+        //     const year = now.getFullYear();
+        //     // 月份补零（1月是0，所以要+1，且小于10时补0）
+        //     const month = (now.getMonth() + 1).toString().padStart(2, '0');
+        //     return `${year}-${month}`;
+        // }
+        // // 页面加载后赋值
+        // $(function() {
+        //     $('#monthInput').val(getCurrentYearMonth());
+        // });
 
         let cols = [
             [
@@ -127,38 +127,32 @@
 
         // 打开详情弹窗（子组件），传递orderId和month
         window.edit = function(obj) {
-            console.log(obj);
-            // 获取当前行的orderId（根据实际字段名调整）
             let userId = obj.data.userId;
-            // 获取搜索框中的月份
-            // currentMonth = $('input[name="month"]').val() || obj.data.month;
+            let name = obj.data.name;
+            let telephone = obj.data.telephone;
 
             if (!userId) {
-                layer.msg("缺少订单ID", {icon: 2, time: 1500});
+                layer.msg("缺少用户ID", {icon: 2, time: 1500});
                 return;
             }
-            // if (!currentMonth) {
-            //     layer.msg("请先选择查询年月", {icon: 2, time: 1500});
-            //     return;
-            // }
 
             layer.open({
                 type: 2,
                 title: '月度消费详情',
                 shade: 0.1,
                 area: ['800px', '400px'],
-                // 通过URL传递参数给子组件
                 content: '/back/monthlyOrderDetails/' + userId,
-                // 也可以通过success回调传递参数（备选方案）
                 success: function(layero, index) {
                     let iframeWin = window[layero.find('iframe')[0]['name']];
-                    // 向子组件传递参数
+
                     iframeWin.initParams({
                         userId: userId,
+                        name: name,
+                        telephone: telephone
                     });
                 }
             });
-        }
+        };
 
         // 监听查询提交
         form.on('submit(user-query)', function(data) {
