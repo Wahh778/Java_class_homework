@@ -89,8 +89,23 @@
 		"id": 5,
 		"title": "月度销售",
 		"icon": "pear-icon pear-icon-data-view",
-		"type": 1,
-		"href": "/back/toSale"
+		"type": 0,
+		"children": [
+			{
+				"id": 501,
+				"title": "月度销售",
+				"type": 1,
+				"openType": "_iframe",
+				"href": "/back/toSale"
+			},
+			{
+				"id": 502,
+				"title": "员工月度订单",
+				"type": 1,
+				"openType": "_iframe",
+				"href": "/back/toMonthlyOrder"
+			}
+		]
 	},
 	{
 		"id": 6,

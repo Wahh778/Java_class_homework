@@ -224,6 +224,13 @@ public class BackController {
         return "sale/sale";
     }
 
+    //员工月度销售页面跳转
+    @PreAuthorize("hasAnyRole('treasurer','manager')")
+    @GetMapping("/back/toMonthlyOrder")
+    public String toMonthlyOrder(){
+        return "sale/monthlyOrder";
+    }
+
     /**
      * 月度销售详情页面跳转
      */
@@ -239,5 +246,13 @@ public class BackController {
     @GetMapping("/back/toTimeConfig")
     public String toTimeConfig() {
         return "system/timeConfig"; // 对应新增的时间配置页面
+    }
+
+
+    //员工月度消费详情
+    @GetMapping("/back/monthlyOrderDetails/{month}")
+    public String toMonthlyOrderDetails(@PathVariable String month, HttpServletRequest request){
+        request.getSession().setAttribute("month", month);
+        return "sale/monthlyOrderDetails";
     }
 }

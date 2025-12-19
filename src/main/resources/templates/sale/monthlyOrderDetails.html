@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <title>员工月度销售详情</title>
+    <link rel="stylesheet" th:href="@{/component/pear/css/pear.css}" />
+</head>
+<body class="pear-container">
+<div class="layui-form layui-card-header layuiadmin-card-header-auto" style="padding: 10px 15px;">
+    <div class="layui-form-item">
+        <label class="layui-form-label" style="width: 80px;">月份：</label>
+        <div class="layui-input-inline" style="width: 200px;">
+            <input type="text" name="month" id="monthInput" placeholder="请输入格式为 YYYY-MM" class="layui-input">
+        </div>
+        <button class="layui-btn layui-btn-normal" lay-submit lay-filter="searchBtn">
+            <i class="layui-icon layui-icon-search"></i> 查询
+        </button>
+        <button class="layui-btn layui-btn-primary" lay-submit lay-filter="resetBtn">
+            <i class="layui-icon layui-icon-refresh"></i> 重置
+        </button>
+    </div>
+</div>
+<div class="layui-card">
+    <div class="layui-card-body">
+        <table id="user-table" lay-filter="user-table"></table>
+    </div>
+</div>
+
+
+<script th:src="@{/component/layui/layui.js}"></script>
+<script th:src="@{/component/pear/pear.js}"></script>
+<script>
+    layui.use(['table', 'form', 'jquery','common'], function() {
+        let table = layui.table;
+        let form = layui.form;
+        let $ = layui.jquery;
+        let common = layui.common;
+        let currentUserId = null;
+
+        function getCurrentMonth() {
+            const now = new Date();
+            const year = now.getFullYear();
+            // 月份补零（1月是0，所以要+1，不足两位补0）
+            const month = (now.getMonth() + 1).toString().padStart(2, '0');
+            return `${year}-${month}`;
+        }
+
+        window.initParams = function (params) {
+            currentUserId = params.userId;
+            const month = getCurrentMonth();//获取当前年月
+
+            tableIns.reload({
+                url: '/sale/monthlyOrderDetails',
+                where: {
+                    userId: currentUserId,
+                    month: month
+                },
+                // page: { curr: 1 }
+            });
+        };
+
+        let cols = [
+            [
+                {
+                    title: '菜品名称',
+                    field: 'name',
+                    align: 'center',
+                    width: 120
+                },
+                {
+                    title: '计量单位',
+                    field: 'unit',
+                    align: 'center',
+                    width: 100
+                },
+                {
+                    title: '数量',
+                    field: 'weight',
+                    align: 'center',
+                    width: 100
+                },
+                {
+                    title: '总计',
+                    field: 'totalPrice',
+                    align: 'center',
+                    width: 120
+                }
+            ]
+        ];
+
+        // 初始化表格
+        let tableIns = table.render({
+            elem: '#user-table',
+            // autoRender: false,
+            page: true,
+            cols: cols,
+            parseData: function(res) {
+                return {
+                    code: 0,
+                    msg: '',
+                    count: res.data.total,
+                    data: res.data.records
+                }
+            }
+        });
+
+        // 监听查询按钮提交
+        form.on('submit(searchBtn)', function(data) {
+            let month = data.field.month;   // 来自输入框
+
+            if (!currentUserId) {
+                layer.msg("缺少用户ID", {icon: 2});
+                return false;
+            }
+
+            tableIns.reload({
+                where: {
+                    userId: currentUserId,
+                    month: month
+                },
+                page: {
+                    curr: 1
+                }
+            });
+            return false;
+        });
+
+        // 监听重置按钮
+        form.on('submit(resetBtn)', function() {
+            $('#monthInput').val('');
+
+            tableIns.reload({
+                where: {
+                    userId: currentUserId,
+                    month: ''
+                },
+                page: {
+                    curr: 1
+                }
+            });
+            return false;
+        });
+
+        // 外部刷新方法（保留原有）
+        window.refresh = function(param) {
+            table.reload('user-table');
+        }
+    });
+</script>

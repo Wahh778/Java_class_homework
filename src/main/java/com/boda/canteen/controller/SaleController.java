@@ -13,8 +13,12 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.boda.canteen.common.MyTimeUtils;
 import com.boda.canteen.common.R;
 import com.boda.canteen.entity.BlanketOrder;
+import com.boda.canteen.entity.MyUser;
+import com.boda.canteen.entity.OrderForm;
 import com.boda.canteen.entity.Sale;
 import com.boda.canteen.security.service.BlanketOrderService;
+import com.boda.canteen.security.service.MyUserService;
+import com.boda.canteen.security.service.OrderFormService;
 import com.boda.canteen.security.service.SaleService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,11 +29,18 @@ import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
 @RequestMapping("/sale")
 public class SaleController {
+
+    @Autowired
+    private MyUserService myUserService;
+
+    @Autowired
+    private OrderFormService orderFormService;
 
     @Autowired
     private SaleService saleService;
@@ -55,6 +66,22 @@ public class SaleController {
         return R.success(pageInfo);
     }
 
+    @PreAuthorize("hasAnyRole('treasurer','manager')")
+    @GetMapping("/monthlyOrder")
+    public R<Page<MyUser>> monthlyOrder(int page, int limit,
+                                      @RequestParam(required = false) String month){
+
+        Page<MyUser> pageInfo = new Page<>(page, limit);
+
+        LambdaQueryWrapper<MyUser> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.like(StrUtil.isNotEmpty(month), MyUser::getName, month)
+                .orderByAsc(MyUser::getUserId);
+
+        myUserService.page(pageInfo, queryWrapper);
+
+        return R.success(pageInfo);
+    }
+
     /**
      * 销售订单详情接口
      */
@@ -63,6 +90,8 @@ public class SaleController {
     public R<Page<BlanketOrder>> details(int page, int limit, HttpServletRequest request){
         String month = (String) request.getSession().getAttribute("month");
         Page<BlanketOrder> pageInfo = new Page<>(page, limit);
+        System.out.println(11111);
+        System.out.println(11111);
 
         QueryWrapper<BlanketOrder> queryWrapper = new QueryWrapper<>();
         if (StrUtil.isNotEmpty(month)){
@@ -78,6 +107,62 @@ public class SaleController {
 
         return R.success(pageInfo);
     }
+
+    //员工月度订单
+    @PreAuthorize("hasAnyRole('treasurer','manager')")
+    @GetMapping("/monthlyOrderDetails")
+    public R<Page<OrderForm>> monthlyOrderDetails(
+            @RequestParam int page,
+            @RequestParam int limit,
+            @RequestParam(required = false) String userId,
+            @RequestParam(required = false) String month) {
+
+        QueryWrapper<OrderForm> orderFormWrapper = new QueryWrapper<>();
+
+        // userId
+        orderFormWrapper.eq("user_id", userId);
+
+        // 月份范围
+        String monthStart = month + "-01";
+        Date begin = MyTimeUtils.getMonthOfBeginTime(monthStart);
+        Date end = MyTimeUtils.getMonthOfEndTime(monthStart);
+        orderFormWrapper.between("order_time", begin, end);
+
+        // 只查 orderId
+        orderFormWrapper.select("order_id");
+
+        List<OrderForm> orderForms = orderFormService.list(orderFormWrapper);
+
+        // 没有订单，直接返回空分页
+        if (orderForms.isEmpty()) {
+            return R.success(new Page<>(page, limit));
+        }
+
+        List<Long> orderIdList = orderForms.stream()
+                .map(OrderForm::getOrderId)
+                .collect(Collectors.toList());
+
+        /* ================= ② 用 orderId 查 blanket_order ================= */
+
+        Page<BlanketOrder> pageInfo = new Page<>(page, limit);
+        QueryWrapper<BlanketOrder> blanketWrapper = new QueryWrapper<>();
+
+        blanketWrapper.in("order_id", orderIdList);
+
+        blanketWrapper
+                .select(
+                        "name",
+                        "unit",
+                        "sum(weight) as weight",
+                        "sum(total_price) as totalPrice"
+                )
+                .groupBy("name", "unit");
+
+        blanketOrderService.page(pageInfo, blanketWrapper);
+
+        return R.success(pageInfo);
+    }
+
 
     /**
      * 批量打印月度销售统计
