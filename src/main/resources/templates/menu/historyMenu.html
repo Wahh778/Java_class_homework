@@ -103,45 +103,98 @@
             if (obj.event === 'detail') {
                 window.detail(obj);
             }else if (obj.event === 'select') {
+                // 复用确认弹窗（毛玻璃样式）
+                layer.open({
+                    type: 1,
+                    title: '提示',
+                    shade: 0.1,
+                    area: ['400px', '220px'],
+                    content: `
+                    <div style="padding: 30px; text-align: center; background: transparent;">
+                        <i class="layui-icon layui-icon-question" style="font-size: 30px; color: #FFB800; margin-bottom: 15px;"></i>
+                        <p style="font-size: 14px; color: #333; margin-bottom: 20px;">确定要复用这些菜品到下一周吗？</p>
+                        <div style="display: flex; justify-content: center; gap: 20px;">
+                            <button class="pear-btn pear-btn-md pear-btn-default" id="cancelBtn">取消</button>
+                            <button class="pear-btn pear-btn-md pear-btn-primary" id="confirmBtn">确定</button>
+                        </div>
+                    </div>
+                `,
+                    success: function(layero) {
+                        layero.css({
+                            'background': 'rgba(255, 255, 255, 0.85)',
+                            'backdrop-filter': 'blur(12px)',
+                            '-webkit-backdrop-filter': 'blur(12px)',
+                            'border-radius': '20px',
+                            'box-shadow': '0 6px 20px rgba(0, 0, 0, 0.25)',
+                            'border': '1px solid rgba(255, 255, 255, 0.9)'
+                        });
+                        layero.find('.layui-layer-title').css({
+                            'background': 'transparent',
+                            'color': '#333',
+                            'font-weight': '600',
+                            'padding-left': '20px'
+                        });
+                        layero.find('.layui-layer-close').css({
+                            'color': '#666',
+                            'font-size': '18px',
+                            'right': '20px'
+                        });
 
-                layer.confirm('确定要复用这些菜品到明日吗', {
-                    icon: 3,
-                    title: '提示'
-                }, function(index) {
-                    layer.close(index);
-                    let loading = layer.load();
-                    $.ajax({
-                        url: "/menu/multiplex/" + obj.data['menuIds'],
-                        dataType: 'json',
-                        type: 'post',
-                        success: function(result) {
-                            layer.close(loading);
-                            if (result.code === 200) {
-                                layer.msg(result.data, {
-                                    icon: 1,
-                                    time: 1000
-                                }, function() {
-                                    table.reload('user-table');
-                                });
-                            } else {
-                                layer.msg(result.msg, {
-                                    icon: 2,
-                                    time: 3000
-                                });
-                            }
-                        }
-                    })
+                        $('#cancelBtn').click(function() {
+                            layer.closeAll();
+                        });
+                        $('#confirmBtn').click(function() {
+                            layer.closeAll();
+                            let loading = layer.load();
+                            $.ajax({
+                                url: "/menu/multiplex/" + obj.data['menuIds'],
+                                dataType: 'json',
+                                type: 'post',
+                                success: function(result) {
+                                    layer.close(loading);
+                                    if (result.code === 200) {
+                                        layer.msg(result.data, {
+                                            icon: 1,
+                                            time: 1000
+                                        }, function() {
+                                            table.reload('user-table');
+                                        });
+                                    } else {
+                                        layer.msg(result.msg, {
+                                            icon: 2,
+                                            time: 3000
+                                        });
+                                    }
+                                }
+                            });
+                        });
+                    }
                 });
             }
         });
 
         window.detail = function(obj) {
+            // 详情弹窗（毛玻璃样式）
             layer.open({
                 type: 2,
                 title: '菜品详情',
                 shade: 0.1,
                 area: ['800px', '400px'],
-                content: '/back/toHistoryDetail/' + obj.data['menuIds']
+                content: '/back/toHistoryDetail/' + obj.data['menuIds'],
+                success: function(layero) {
+                    layero.css({
+                        'background': 'rgba(255, 255, 255, 0.85)',
+                        'backdrop-filter': 'blur(12px)',
+                        '-webkit-backdrop-filter': 'blur(12px)',
+                        'border-radius': '20px',
+                        'box-shadow': '0 6px 20px rgba(0, 0, 0, 0.25)',
+                        'border': '1px solid rgba(255, 255, 255, 0.9)'
+                    });
+                    layero.find('iframe').css({
+                        'background': 'transparent',
+                        'border-radius': '18px'
+                    });
+                }
             });
         }
 

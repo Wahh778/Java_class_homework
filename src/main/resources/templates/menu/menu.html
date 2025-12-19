@@ -135,11 +135,10 @@
             defaultToolbar: ['filter', 'print', 'exports']
         });
 
+        // 批量复用弹窗（毛玻璃样式）
         table.on('toolbar(user-table)', function(obj) {
             if (obj.event === 'add') {
-
                 var checkIds = common.checkField(obj,'menuId');
-
                 if (checkIds === "") {
                     layer.msg("未选中数据", {
                         icon: 3,
@@ -148,33 +147,77 @@
                     return false;
                 }
 
-                layer.confirm('确定要复用这些菜品到下一周吗', {
-                    icon: 3,
-                    title: '提示'
-                }, function(index) {
-                    layer.close(index);
-                    let loading = layer.load();
-                    $.ajax({
-                        url: "/menu/multiplex/" + checkIds,
-                        dataType: 'json',
-                        type: 'post',
-                        success: function(result) {
-                            layer.close(loading);
-                            if (result.code === 200) {
-                                layer.msg(result.data, {
-                                    icon: 1,
-                                    time: 1000
-                                }, function() {
-                                    table.reload('user-table');
-                                });
-                            } else {
-                                layer.msg(result.msg, {
-                                    icon: 2,
-                                    time: 3000
-                                });
-                            }
-                        }
-                    })
+                // 替换原生confirm为自定义毛玻璃弹窗
+                layer.open({
+                    type: 1,
+                    title: '提示',
+                    shade: 0.1,
+                    area: ['400px', '220px'],
+                    content: `
+                        <div style="padding: 30px; text-align: center; background: transparent;">
+                            <i class="layui-icon layui-icon-question" style="font-size: 30px; color: #FFB800; margin-bottom: 15px;"></i>
+                            <p style="font-size: 14px; color: #333; margin-bottom: 20px;">确定要复用这些菜品到下一周吗？</p>
+                            <div style="display: flex; justify-content: center; gap: 20px;">
+                                <button class="pear-btn pear-btn-md pear-btn-default" id="cancelBtn">取消</button>
+                                <button class="pear-btn pear-btn-md pear-btn-primary" id="confirmBtn">确定</button>
+                            </div>
+                        </div>
+                    `,
+                    success: function(layero) {
+                        // 统一毛玻璃样式
+                        layero.css({
+                            'background': 'rgba(255, 255, 255, 0.85)',
+                            'backdrop-filter': 'blur(12px)',
+                            '-webkit-backdrop-filter': 'blur(12px)',
+                            'border-radius': '20px',
+                            'box-shadow': '0 6px 20px rgba(0, 0, 0, 0.25)',
+                            'border': '1px solid rgba(255, 255, 255, 0.9)'
+                        });
+                        // 标题栏样式适配
+                        layero.find('.layui-layer-title').css({
+                            'background': 'transparent',
+                            'color': '#333',
+                            'font-weight': '600',
+                            'padding-left': '20px'
+                        });
+                        // 关闭按钮样式
+                        layero.find('.layui-layer-close').css({
+                            'color': '#666',
+                            'font-size': '18px',
+                            'right': '20px'
+                        });
+
+                        // 取消按钮事件
+                        $('#cancelBtn').click(function() {
+                            layer.closeAll();
+                        });
+                        // 确定按钮事件（保留原复用逻辑）
+                        $('#confirmBtn').click(function() {
+                            layer.closeAll();
+                            let loading = layer.load();
+                            $.ajax({
+                                url: "/menu/multiplex/" + checkIds,
+                                dataType: 'json',
+                                type: 'post',
+                                success: function(result) {
+                                    layer.close(loading);
+                                    if (result.code === 200) {
+                                        layer.msg(result.data, {
+                                            icon: 1,
+                                            time: 1000
+                                        }, function() {
+                                            table.reload('user-table');
+                                        });
+                                    } else {
+                                        layer.msg(result.msg, {
+                                            icon: 2,
+                                            time: 3000
+                                        });
+                                    }
+                                }
+                            });
+                        });
+                    }
                 });
             }
         });
@@ -192,14 +235,30 @@
             return false;
         });
 
-
+        // 修改弹窗（毛玻璃样式）
         window.remove = function(obj) {
             layer.open({
                 type: 2,
                 title: '修改',
                 shade: 0.1,
                 area: ['500px', '400px'],
-                content: '/back/toMenuEdit/' + obj.data['menuId']
+                content: '/back/toMenuEdit/' + obj.data['menuId'],
+                success: function(layero) {
+                    // 毛玻璃核心样式（与配送员专栏一致）
+                    layero.css({
+                        'background': 'rgba(255, 255, 255, 0.85)',
+                        'backdrop-filter': 'blur(12px)',
+                        '-webkit-backdrop-filter': 'blur(12px)',
+                        'border-radius': '20px',
+                        'box-shadow': '0 6px 20px rgba(0, 0, 0, 0.25)',
+                        'border': '1px solid rgba(255, 255, 255, 0.9)'
+                    });
+                    // iframe内容区域透明，不遮挡毛玻璃效果
+                    layero.find('iframe').css({
+                        'background': 'transparent',
+                        'border-radius': '18px'
+                    });
+                }
             });
         }
 

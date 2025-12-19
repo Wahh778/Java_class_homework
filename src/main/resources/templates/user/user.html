@@ -1,212 +1,289 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-	<head>
-		<meta charset="utf-8">
-		<title>用户管理</title>
-		<link rel="stylesheet" th:href="@{/component/pear/css/pear.css}" />
-	</head>
-	<body class="pear-container">
-		<div class="layui-card">
-			<div class="layui-card-body">
-				<form class="layui-form" action="">
-					<div class="layui-form-item" style="padding-left: 20px">
-						<div class="layui-form-item layui-inline">
-							<label class="layui-form-label">用户昵称</label>
-							<div class="layui-input-inline">
-								<input type="text" name="name" placeholder="请输入昵称" class="layui-input">
-							</div>
-						</div>
-						<div class="layui-form-item layui-inline">
-							<button class="pear-btn pear-btn-md pear-btn-primary" lay-submit lay-filter="user-query">
-								<i class="layui-icon layui-icon-search"></i>
-								查询
-							</button>
-							<button type="reset" class="pear-btn pear-btn-md">
-								<i class="layui-icon layui-icon-refresh"></i>
-								重置
-							</button>
+<head>
+	<meta charset="utf-8">
+	<title>用户管理</title>
+	<link rel="stylesheet" th:href="@{/component/pear/css/pear.css}" />
+</head>
+<body class="pear-container">
+<div class="layui-card">
+	<div class="layui-card-body">
+		<form class="layui-form" action="">
+			<div class="layui-form-item" style="padding-left: 20px">
+				<div class="layui-form-item layui-inline">
+					<label class="layui-form-label">用户昵称</label>
+					<div class="layui-input-inline">
+						<input type="text" name="name" placeholder="请输入昵称" class="layui-input">
+					</div>
+				</div>
+				<div class="layui-form-item layui-inline">
+					<button class="pear-btn pear-btn-md pear-btn-primary" lay-submit lay-filter="user-query">
+						<i class="layui-icon layui-icon-search"></i>
+						查询
+					</button>
+					<button type="reset" class="pear-btn pear-btn-md">
+						<i class="layui-icon layui-icon-refresh"></i>
+						重置
+					</button>
+				</div>
+			</div>
+		</form>
+	</div>
+</div>
+<div class="layui-card">
+	<div class="layui-card-body">
+		<table id="user-table" lay-filter="user-table"></table>
+	</div>
+</div>
+
+<script type="text/html" id="user-toolbar">
+	<button class="pear-btn pear-btn-primary pear-btn-md" lay-event="add">
+		<i class="layui-icon layui-icon-add-1"></i>
+		新增
+	</button>
+	<button class="pear-btn pear-btn-danger pear-btn-md" lay-event="batchRemove">
+		<i class="layui-icon layui-icon-delete"></i>
+		删除
+	</button>
+</script>
+
+<script type="text/html" id="user-role">
+	{{#if (d.role == "manager") { }}
+	<span>食堂经理</span>
+	{{# }else if(d.role == "chef"){ }}
+	<span>厨房大厨</span>
+	{{# }else if(d.role == "caterer"){ }}
+	<span>配餐员</span>
+	{{# }else if(d.role == "treasurer"){ }}
+	<span>财务管理</span>
+	{{# }else if(d.role == "staff"){ }}
+	<span>企业员工</span>
+	{{# } }}
+</script>
+
+<script type="text/html" id="user-bar">
+	<div class="layui-clear-space">
+		<button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="edit">编辑</button>
+		<button class="pear-btn pear-btn-danger pear-btn-sm" lay-event="remove">删除</button>
+	</div>
+</script>
+
+<script th:src="@{/component/layui/layui.js}"></script>
+<script th:src="@{/component/pear/pear.js}"></script>
+<script>
+	layui.use(['table', 'form', 'jquery','common'], function() {
+		let table = layui.table;
+		let form = layui.form;
+		let $ = layui.jquery;
+		let common = layui.common;
+
+		let cols = [
+			[{
+				type: 'checkbox'
+			},
+				{
+					title: '账号',
+					field: 'username',
+					align: 'center',
+					width: 100
+				},
+				{
+					title: '昵称',
+					field: 'name',
+					align: 'center',
+					width: 100
+				},
+				{
+					title: '性别',
+					field: 'sex',
+					align: 'center',
+					width: 80
+				},
+				{
+					title: '电话',
+					field: 'telephone',
+					align: 'center',
+					width: 120
+				},
+				{
+					title: '部门',
+					field: 'department',
+					align: 'center',
+					width: 80
+				},
+				{
+					title: '角色',
+					field: 'role',
+					align: 'center',
+					templet: '#user-role',
+					width: 100
+				},
+				{
+					title: '工位信息',
+					field: 'work_information',
+					align: 'center',
+					width: 100
+				},
+				{
+					title: '操作',
+					toolbar: '#user-bar',
+					align: 'center',
+					width: 130
+				}
+			]
+		]
+
+		table.render({
+			elem: '#user-table',
+			url: '/user/page',
+			page: true,
+			parseData:function(res) {
+				return {
+					"code" : 0,
+					"msg" : "",
+					"count" : res.data.total,
+					"data": res.data.records
+				}
+			},
+			cols: cols,
+			skin: 'line',
+			limits: [10, 20],
+			toolbar: '#user-toolbar',
+			defaultToolbar: [{
+				title: '刷新',
+				layEvent: 'refresh',
+				icon: 'layui-icon-refresh',
+			}, 'filter', 'print', 'exports']
+		});
+
+		table.on('tool(user-table)', function(obj) {
+			if (obj.event === 'remove') {
+				window.remove(obj);
+			} else if (obj.event === 'edit') {
+				window.edit(obj);
+			}
+		});
+
+		table.on('toolbar(user-table)', function(obj) {
+			if (obj.event === 'add') {
+				window.add();
+			} else if (obj.event === 'refresh') {
+				window.refresh();
+			} else if (obj.event === 'batchRemove') {
+				window.batchRemove(obj);
+			}
+		});
+
+		form.on('submit(user-query)', function(data) {
+			table.reload('user-table', {
+				where: data.field
+			})
+			return false;
+		});
+
+		// 新增弹窗（毛玻璃样式）
+		window.add = function() {
+			layer.open({
+				type: 2,
+				title: '新增',
+				shade: 0.1,
+				area: [common.isModile()?'100%':'500px', common.isModile()?'100%':'400px'],
+				content: '/back/toUserAdd',
+				success: function(layero) {
+					// 统一毛玻璃样式
+					layero.css({
+						'background': 'rgba(255, 255, 255, 0.85)',
+						'backdrop-filter': 'blur(12px)',
+						'-webkit-backdrop-filter': 'blur(12px)',
+						'border-radius': '20px',
+						'box-shadow': '0 6px 20px rgba(0, 0, 0, 0.25)',
+						'border': '1px solid rgba(255, 255, 255, 0.9)'
+					});
+					// iframe内容区域透明
+					layero.find('iframe').css({
+						'background': 'transparent',
+						'border-radius': '18px'
+					});
+				}
+			});
+		}
+
+		// 编辑弹窗（毛玻璃样式）
+		window.edit = function(obj) {
+			layer.open({
+				type: 2,
+				title: '修改',
+				shade: 0.1,
+				area: ['500px', '400px'],
+				content: '/back/toUserEdit/' + obj.data['userId'],
+				success: function(layero) {
+					// 统一毛玻璃样式
+					layero.css({
+						'background': 'rgba(255, 255, 255, 0.85)',
+						'backdrop-filter': 'blur(12px)',
+						'-webkit-backdrop-filter': 'blur(12px)',
+						'border-radius': '20px',
+						'box-shadow': '0 6px 20px rgba(0, 0, 0, 0.25)',
+						'border': '1px solid rgba(255, 255, 255, 0.9)'
+					});
+					// iframe内容区域透明
+					layero.find('iframe').css({
+						'background': 'transparent',
+						'border-radius': '18px'
+					});
+				}
+			});
+		}
+
+		// 单个删除弹窗（毛玻璃样式）
+		window.remove = function(obj) {
+			// 替换原生confirm为自定义毛玻璃弹窗
+			layer.open({
+				type: 1,
+				title: '提示',
+				shade: 0.1,
+				area: ['400px', '220px'],
+				content: `
+					<div style="padding: 30px; text-align: center; background: transparent;">
+						<i class="layui-icon layui-icon-question" style="font-size: 30px; color: #FFB800; margin-bottom: 15px;"></i>
+						<p style="font-size: 14px; color: #333; margin-bottom: 20px;">确定要删除该用户吗？</p>
+						<div style="display: flex; justify-content: center; gap: 20px;">
+							<button class="pear-btn pear-btn-md pear-btn-default" id="cancelBtn">取消</button>
+							<button class="pear-btn pear-btn-md pear-btn-primary" id="confirmBtn">确定</button>
 						</div>
 					</div>
-				</form>
-			</div>
-		</div>
-		<div class="layui-card">
-			<div class="layui-card-body">
-				<table id="user-table" lay-filter="user-table"></table>
-			</div>
-		</div>
-
-		<script type="text/html" id="user-toolbar">
-			<button class="pear-btn pear-btn-primary pear-btn-md" lay-event="add">
-		        <i class="layui-icon layui-icon-add-1"></i>
-		        新增
-		    </button>
-		    <button class="pear-btn pear-btn-danger pear-btn-md" lay-event="batchRemove">
-		        <i class="layui-icon layui-icon-delete"></i>
-		        删除
-		    </button>
-		</script>
-
-		<script type="text/html" id="user-role">
-			{{#if (d.role == "manager") { }}
-			<span>食堂经理</span>
-			{{# }else if(d.role == "chef"){ }}
-			<span>厨房大厨</span>
-			{{# }else if(d.role == "caterer"){ }}
-			<span>配餐员</span>
-			{{# }else if(d.role == "treasurer"){ }}
-			<span>财务管理</span>
-			{{# }else if(d.role == "staff"){ }}
-			<span>企业员工</span>
-			{{# } }}
-		</script>
-
-		<script type="text/html" id="user-bar">
-			<div class="layui-clear-space">
-				<button class="pear-btn pear-btn-primary pear-btn-sm" lay-event="edit">编辑</button>
-				<button class="pear-btn pear-btn-danger pear-btn-sm" lay-event="remove">删除</button>
-			</div>
-		</script>
-
-		<script th:src="@{/component/layui/layui.js}"></script>
-		<script th:src="@{/component/pear/pear.js}"></script>
-		<script>
-			layui.use(['table', 'form', 'jquery','common'], function() {
-				let table = layui.table;
-				let form = layui.form;
-				let $ = layui.jquery;
-				let common = layui.common;
-
-				let cols = [
-					[{
-							type: 'checkbox'
-						},
-						{
-							title: '账号',
-							field: 'username',
-							align: 'center',
-							width: 100
-						},
-						{
-							title: '昵称',
-							field: 'name',
-							align: 'center',
-							width: 100
-						},
-						{
-							title: '性别',
-							field: 'sex',
-							align: 'center',
-							width: 80
-						},
-						{
-							title: '电话',
-							field: 'telephone',
-							align: 'center',
-							width: 120
-						},
-						{
-							title: '部门',
-							field: 'department',
-							align: 'center',
-							width: 80
-						},
-						{
-							title: '角色',
-							field: 'role',
-							align: 'center',
-							templet: '#user-role',
-							width: 100
-						},
-						{
-							title: '工位信息',
-							field: 'workInformation',
-							align: 'center',
-							width: 100
-						},
-						{
-							title: '操作',
-							toolbar: '#user-bar',
-							align: 'center',
-							width: 130
-						}
-					]
-				]
-
-				table.render({
-					elem: '#user-table',
-					url: '/user/page',
-					page: true,
-					parseData:function(res) {
-						return {
-							"code" : 0,
-							"msg" : "",
-							"count" : res.data.total,
-							"data": res.data.records
-						}
-					},
-					cols: cols,
-					skin: 'line',
-					limits: [10, 20],
-					toolbar: '#user-toolbar',
-					defaultToolbar: [{
-						title: '刷新',
-						layEvent: 'refresh',
-						icon: 'layui-icon-refresh',
-					}, 'filter', 'print', 'exports']
-				});
-
-				table.on('tool(user-table)', function(obj) {
-					if (obj.event === 'remove') {
-						window.remove(obj);
-					} else if (obj.event === 'edit') {
-						window.edit(obj);
-					}
-				});
-
-				table.on('toolbar(user-table)', function(obj) {
-					if (obj.event === 'add') {
-						window.add();
-					} else if (obj.event === 'refresh') {
-						window.refresh();
-					} else if (obj.event === 'batchRemove') {
-						window.batchRemove(obj);
-					}
-				});
-
-				form.on('submit(user-query)', function(data) {
-					table.reload('user-table', {
-						where: data.field
-					})
-					return false;
-				});
-
-				window.add = function() {
-					layer.open({
-						type: 2,
-						title: '新增',
-						shade: 0.1,
-						area: [common.isModile()?'100%':'500px', common.isModile()?'100%':'400px'],
-						content: '/back/toUserAdd'
+				`,
+				success: function(layero) {
+					// 统一毛玻璃样式
+					layero.css({
+						'background': 'rgba(255, 255, 255, 0.85)',
+						'backdrop-filter': 'blur(12px)',
+						'-webkit-backdrop-filter': 'blur(12px)',
+						'border-radius': '20px',
+						'box-shadow': '0 6px 20px rgba(0, 0, 0, 0.25)',
+						'border': '1px solid rgba(255, 255, 255, 0.9)'
 					});
-				}
-
-				window.edit = function(obj) {
-					layer.open({
-						type: 2,
-						title: '修改',
-						shade: 0.1,
-						area: ['500px', '400px'],
-						content: '/back/toUserEdit/' + obj.data['userId']
+					// 标题栏样式适配
+					layero.find('.layui-layer-title').css({
+						'background': 'transparent',
+						'color': '#333',
+						'font-weight': '600',
+						'padding-left': '20px'
 					});
-				}
+					// 关闭按钮样式
+					layero.find('.layui-layer-close').css({
+						'color': '#666',
+						'font-size': '18px',
+						'right': '20px'
+					});
 
-				window.remove = function(obj) {
-					layer.confirm('确定要删除该用户', {
-						icon: 3,
-						title: '提示'
-					}, function(index) {
-						layer.close(index);
+					// 取消按钮事件
+					$('#cancelBtn').click(function() {
+						layer.closeAll();
+					});
+					// 确定按钮事件（保留原删除逻辑）
+					$('#confirmBtn').click(function() {
+						layer.closeAll();
 						let loading = layer.load();
 						$.ajax({
 							url: "/user/delete/" + obj.data['userId'],
@@ -228,27 +305,71 @@
 									});
 								}
 							}
-						})
+						});
 					});
 				}
+			});
+		}
 
-				window.batchRemove = function(obj) {
-					
-					var checkIds = common.checkField(obj,'userId');
-					
-					if (checkIds === "") {
-						layer.msg("未选中数据", {
-							icon: 3,
-							time: 1000
-						});
-						return false;
-					}
-					
-					layer.confirm('确定要删除这些用户', {
-						icon: 3,
-						title: '提示'
-					}, function(index) {
-						layer.close(index);
+		// 批量删除弹窗（毛玻璃样式）
+		window.batchRemove = function(obj) {
+			var checkIds = common.checkField(obj,'userId');
+
+			if (checkIds === "") {
+				layer.msg("未选中数据", {
+					icon: 3,
+					time: 1000
+				});
+				return false;
+			}
+
+			// 替换原生confirm为自定义毛玻璃弹窗
+			layer.open({
+				type: 1,
+				title: '提示',
+				shade: 0.1,
+				area: ['400px', '220px'],
+				content: `
+					<div style="padding: 30px; text-align: center; background: transparent;">
+						<i class="layui-icon layui-icon-question" style="font-size: 30px; color: #FFB800; margin-bottom: 15px;"></i>
+						<p style="font-size: 14px; color: #333; margin-bottom: 20px;">确定要删除这些用户吗？</p>
+						<div style="display: flex; justify-content: center; gap: 20px;">
+							<button class="pear-btn pear-btn-md pear-btn-default" id="cancelBtnBatch">取消</button>
+							<button class="pear-btn pear-btn-md pear-btn-primary" id="confirmBtnBatch">确定</button>
+						</div>
+					</div>
+				`,
+				success: function(layero) {
+					// 统一毛玻璃样式
+					layero.css({
+						'background': 'rgba(255, 255, 255, 0.85)',
+						'backdrop-filter': 'blur(12px)',
+						'-webkit-backdrop-filter': 'blur(12px)',
+						'border-radius': '20px',
+						'box-shadow': '0 6px 20px rgba(0, 0, 0, 0.25)',
+						'border': '1px solid rgba(255, 255, 255, 0.9)'
+					});
+					// 标题栏样式适配
+					layero.find('.layui-layer-title').css({
+						'background': 'transparent',
+						'color': '#333',
+						'font-weight': '600',
+						'padding-left': '20px'
+					});
+					// 关闭按钮样式
+					layero.find('.layui-layer-close').css({
+						'color': '#666',
+						'font-size': '18px',
+						'right': '20px'
+					});
+
+					// 取消按钮事件
+					$('#cancelBtnBatch').click(function() {
+						layer.closeAll();
+					});
+					// 确定按钮事件（保留原批量删除逻辑）
+					$('#confirmBtnBatch').click(function() {
+						layer.closeAll();
 						let loading = layer.load();
 						$.ajax({
 							url: "/user/deleteBatch/" + checkIds,
@@ -270,14 +391,16 @@
 									});
 								}
 							}
-						})
+						});
 					});
 				}
+			});
+		}
 
-				window.refresh = function(param) {
-					table.reload('user-table');
-				}
-			})
-		</script>
-	</body>
+		window.refresh = function(param) {
+			table.reload('user-table');
+		}
+	})
+</script>
+</body>
 </html>

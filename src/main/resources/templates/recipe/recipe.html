@@ -174,7 +174,22 @@
                 title: '新增',
                 shade: 0.1,
                 area: [common.isModile()?'100%':'500px', common.isModile()?'100%':'400px'],
-                content: '/back/toRecipeAdd'
+                content: '/back/toRecipeAdd',
+                // 新增success回调：匹配毛玻璃样式
+                success: function(layero) {
+                    layero.css({
+                        'background': 'rgba(255, 255, 255, 0.85)',
+                        'backdrop-filter': 'blur(12px)',
+                        '-webkit-backdrop-filter': 'blur(12px)',
+                        'border-radius': '20px',
+                        'box-shadow': '0 6px 20px rgba(0, 0, 0, 0.25)',
+                        'border': '1px solid rgba(255, 255, 255, 0.9)'
+                    });
+                    layero.find('iframe').css({
+                        'background': 'transparent',
+                        'border-radius': '10px'
+                    });
+                }
             });
         }
 
@@ -184,7 +199,24 @@
                 title: '修改',
                 shade: 0.1,
                 area: ['500px', '400px'],
-                content: '/back/toRecipeEdit/' + obj.data['recipeId']
+                content: '/back/toRecipeEdit/' + obj.data['recipeId'],
+                // 新增success回调：和用户管理弹窗一致的毛玻璃+圆角样式
+                success: function(layero) {
+                    // 给弹窗容器添加毛玻璃核心样式
+                    layero.css({
+                        'background': 'rgba(255, 255, 255, 0.85)', // 半透明白色底色
+                        'backdrop-filter': 'blur(12px)', // 毛玻璃模糊核心属性
+                        '-webkit-backdrop-filter': 'blur(12px)', // 兼容webkit内核浏览器（如Chrome/Safari）
+                        'border-radius': '20px', // 圆角优化视觉
+                        'box-shadow': '0 6px 20px rgba(0, 0, 0, 0.25)', // 阴影增强层次感
+                        'border': '1px solid rgba(255, 255, 255, 0.9)' // 浅边框提升质感
+                    });
+                    // 让弹窗内的iframe内容区域背景透明，不遮挡毛玻璃效果
+                    layero.find('iframe').css({
+                        'background': 'transparent',
+                        'border-radius': '10px' // 跟外层弹窗圆角匹配
+                    });
+                }
             });
         }
 
