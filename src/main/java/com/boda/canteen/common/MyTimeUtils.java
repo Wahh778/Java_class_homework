@@ -55,7 +55,7 @@ public class MyTimeUtils {
     }
 
     /**
-     *  获取当前时间的下一周的开始
+     *  获取当前时间的明日的开始
      */
     public static Date getNextWeekOfBeginTime() {
         // 获取当前时间的这一周的开始
@@ -64,7 +64,7 @@ public class MyTimeUtils {
     }
 
     /**
-     *  获取当前时间的下一周的结尾
+     *  获取当前时间的明日的结尾
      */
     public static Date getNextWeekOfEndTime() {
         // 获取当前时间的这一周的结尾

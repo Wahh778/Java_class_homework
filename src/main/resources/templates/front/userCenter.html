@@ -116,6 +116,21 @@
             box-shadow: 0 8px 25px rgba(230, 91, 14, 0.4) !important;
         }
 
+        /* 新增：取消订单按钮样式 */
+        .cancel-order-btn {
+            background: linear-gradient(135deg, rgba(255, 68, 68, 0.9), rgba(204, 0, 0, 0.8)) !important;
+            box-shadow: 0 4px 15px rgba(255, 68, 68, 0.2) !important;
+            min-width: 100px !important;
+            height: 40px !important;
+            font-size: 13px !important;
+            padding: 8px 20px !important;
+        }
+
+        .cancel-order-btn:hover {
+            background: linear-gradient(135deg, rgba(255, 68, 68, 1), rgba(204, 0, 0, 0.95)) !important;
+            box-shadow: 0 8px 25px rgba(255, 68, 68, 0.4) !important;
+        }
+
         /* 模态框按钮优化 */
         .modal-footer .btn {
             padding: 8px 20px !important;
@@ -637,6 +652,25 @@
             padding: 15px 0 0 0;
             border-top: 1px solid rgba(255, 255, 255, 0.08);
         }
+
+        /* 无订单提示样式 */
+        .no-order-tip {
+            text-align: center;
+            padding: 30px 0;
+            color: #999;
+            font-size: 16px;
+        }
+
+        .no-order-tip a {
+            color: #39ADB4;
+            text-decoration: none;
+            margin-left: 10px;
+        }
+
+        .no-order-tip a:hover {
+            color: #2d8c92;
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -777,6 +811,7 @@
                     <!-- 今日订单标签页 -->
                     <div role="tabpanel" class="tab-pane" id="todayOrder">
                         <h3>今日订单详情</h3>
+                        <!-- 有订单时显示 -->
                         <div th:each="order:${session.orderList}" class="demo-charts mdl-color--white mdl-shadow--2dp mdl-cell mdl-cell--12-col mdl-grid today-order-item">
                             <div class="tab-content col-lg-12">
                                 <table class="table " cellpadding="6" cellspacing="1">
@@ -807,8 +842,22 @@
                                     </tr>
                                     </tbody>
                                 </table>
+
+                                <!-- 新增：取消订单按钮 -->
+                                <div style="margin-top: 15px;">
+                                    <button class="templatemo-blue-button cancel-order-btn" th:attr="data-order-id=${order.orderId}">
+                                        <i class="material-icons">delete</i>
+                                        <span>取消订单</span>
+                                    </button>
+                                </div>
                             </div>
                             <div class="mdl-card__actions mdl-card--border"></div>
+                        </div>
+
+                        <!-- 无订单时提示 -->
+                        <div th:if="${#lists.isEmpty(session.orderList)}" class="no-order-tip">
+                            暂无今日订单
+                            <a th:href="@{/front/toMain}">去下单</a>
                         </div>
                     </div>
 
@@ -848,6 +897,11 @@
                                         </tr>
                                         </tbody>
                                     </table>
+
+                                    <!-- 月度无订单提示 -->
+                                    <div th:if="${#lists.isEmpty(session.monBlanketOrderList)}" class="no-order-tip">
+                                        本月暂无订单记录
+                                    </div>
                                 </div>
                             </div>
                             <div class="mdl-card__actions mdl-card--border">
@@ -945,6 +999,50 @@
             $(this).data('scrollTimer', setTimeout(() => {
                 $(this).css('box-shadow', 'none');
             }, 100));
+        });
+
+        // 8. 新增：取消订单按钮点击事件
+        $('.cancel-order-btn').click(function() {
+            const orderId = $(this).attr('data-order-id');
+            // 确认取消弹窗
+            swal({
+                title: "确认取消订单？",
+                text: "取消后原订单将被删除，您可重新提交新订单！",
+                type: "warning",
+                showCancelButton: true,
+                confirmButtonColor: "#ff4444",
+                confirmButtonText: "确认取消",
+                cancelButtonText: "取消",
+                closeOnConfirm: false
+            }, function() {
+                // 调用取消订单接口
+                $.ajax({
+                    url: '/order/cancel/' + orderId,
+                    type: 'POST',
+                    dataType: 'json',
+                    success: function(res) {
+                        if (res.code === 1 || res.success) { // 适配不同的返回格式
+                            swal({
+                                title: "取消成功",
+                                text: res.msg || "订单取消成功，页面即将刷新！",
+                                type: "success"
+                            }, function() {
+                                // 刷新页面，更新订单列表
+                                window.location.reload();
+                            });
+                        } else {
+                            swal("取消失败", res.msg || "订单取消失败，请稍后重试！", "error");
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        let errorMsg = "取消订单失败：网络异常";
+                        if (xhr.responseJSON && xhr.responseJSON.msg) {
+                            errorMsg = "取消订单失败：" + xhr.responseJSON.msg;
+                        }
+                        swal("错误", errorMsg, "error");
+                    }
+                });
+            });
         });
     })
 </script>

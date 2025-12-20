@@ -56,7 +56,7 @@ public class OrderController {
      * 订单提交接口
      * 核心规则：
      * 1. 配送时间段（本日orderDeadline ~ mealStartTime）：完全禁止点单
-     * 2. 非配送时间段：允许重复提交，覆盖旧订单（保证当日仅1单）
+     * 2. 非配送时间段：本日菜单时间范围内（上一日mealStartTime ~ 本日orderDeadline）仅可提交一次订单，不可重复提交/覆盖
      */
     @PostMapping("/submit")
     @Transactional(rollbackFor = Exception.class) // 事务保障，防止数据不一致
@@ -84,7 +84,35 @@ public class OrderController {
             throw new CustomException("当前处于配送时间段，禁止提交订单！");
         }
 
-        // ===== 3. 购物车校验 =====
+        // ===== 3. 计算本日菜单时间范围（与菜单接口逻辑完全对齐） =====
+        Date todayMenuStartTime, todayMenuEndTime;
+        LocalDate baseDate;
+        if (MyTimeUtils.isAfterTodayOrderDeadline(orderDeadlineStr)) {
+            // 当前时间已超过本日orderDeadline → 本日菜单：本日mealStartTime ~ 明日orderDeadline
+            baseDate = MyTimeUtils.getToday();
+            todayMenuStartTime = MyTimeUtils.getDateWithTime(baseDate, mealStartTimeStr);
+            todayMenuEndTime = MyTimeUtils.getDateWithTime(baseDate.plusDays(1), orderDeadlineStr);
+        } else {
+            // 当前时间未超过本日orderDeadline → 本日菜单：昨日mealStartTime ~ 本日orderDeadline
+            baseDate = MyTimeUtils.getYesterday();
+            todayMenuStartTime = MyTimeUtils.getDateWithTime(baseDate, mealStartTimeStr);
+            todayMenuEndTime = MyTimeUtils.getDateWithTime(baseDate.plusDays(1), orderDeadlineStr);
+        }
+        log.info("用户{}本日菜单时间范围：{} ~ {}", userId,
+                DateUtil.formatDateTime(todayMenuStartTime),
+                DateUtil.formatDateTime(todayMenuEndTime));
+
+        // ===== 4. 校验：本日菜单时间范围内是否已有订单（核心规则） =====
+        LambdaQueryWrapper<OrderForm> existOrderQuery = new LambdaQueryWrapper<>();
+        existOrderQuery.eq(OrderForm::getUserId, userId)
+                .between(OrderForm::getOrderTime, todayMenuStartTime, todayMenuEndTime);
+        long existOrderCount = orderFormService.count(existOrderQuery);
+
+        if (existOrderCount > 0) {
+            throw new CustomException("本日菜单时间范围内仅可提交一次订单，您已提交过，无法重复提交！");
+        }
+
+        // ===== 5. 购物车校验 =====
         LambdaQueryWrapper<ShopCart> cartQueryWrapper = new LambdaQueryWrapper<>();
         cartQueryWrapper.eq(ShopCart::getUserId, userId);
         List<ShopCart> shopCartList = shopCartService.list(cartQueryWrapper);
@@ -92,28 +120,7 @@ public class OrderController {
             throw new CustomException("购物车为空，无法提交订单");
         }
 
-        // ===== 4. 非配送时段：删除当日旧订单（主单+明细） =====
-        Date beginOfDay = DateUtil.beginOfDay(now);
-        Date endOfDay = DateUtil.endOfDay(now);
-        LambdaQueryWrapper<OrderForm> oldOrderQuery = new LambdaQueryWrapper<>();
-        oldOrderQuery.eq(OrderForm::getUserId, userId)
-                .between(OrderForm::getOrderTime, beginOfDay, endOfDay);
-        List<OrderForm> oldOrders = orderFormService.list(oldOrderQuery);
-
-        if (!oldOrders.isEmpty()) {
-            for (OrderForm oldOrder : oldOrders) {
-                Long oldOrderId = oldOrder.getOrderId();
-                // 删除旧订单明细
-                LambdaQueryWrapper<BlanketOrder> blanketQuery = new LambdaQueryWrapper<>();
-                blanketQuery.eq(BlanketOrder::getOrderId, oldOrderId);
-                blanketOrderService.remove(blanketQuery);
-                // 删除旧主订单
-                orderFormService.removeById(oldOrderId);
-                log.info("用户{}删除当日旧订单，订单号：{}", userId, oldOrderId);
-            }
-        }
-
-        // ===== 5. 生成新订单 =====
+        // ===== 6. 生成新订单 =====
         // 生成唯一订单ID
         long newOrderId = RandomUtil.randomLong(100000L, 999999999999L);
         // 补齐订单信息
@@ -131,7 +138,7 @@ public class OrderController {
             throw new CustomException("订单提交失败：主订单保存失败");
         }
 
-        // ===== 6. 保存订单明细 =====
+        // ===== 7. 保存订单明细 =====
         try {
             for (ShopCart cart : shopCartList) {
                 BlanketOrder blanketOrder = new BlanketOrder();
@@ -155,18 +162,18 @@ public class OrderController {
             throw new CustomException("订单提交失败：" + e.getMessage());
         }
 
-        // ===== 7. 清空购物车 =====
+        // ===== 8. 清空购物车 =====
         LambdaQueryWrapper<ShopCart> clearCartQuery = new LambdaQueryWrapper<>();
         clearCartQuery.eq(ShopCart::getUserId, userId);
         boolean clearCart = shopCartService.remove(clearCartQuery);
 
-        // ===== 8. 返回结果 =====
+        // ===== 9. 返回结果 =====
         if (clearCart) {
             log.info("用户{}订单提交成功，订单号：{}", userId, newOrderId);
-            return R.success(oldOrders.isEmpty() ? "订单提交成功" : "订单已更新为最新版本");
+            return R.success("订单提交成功");
         } else {
             log.warn("用户{}订单提交成功，但购物车清空失败，订单号：{}", userId, newOrderId);
-            return R.fail(oldOrders.isEmpty() ? "订单提交成功，购物车清空失败" : "订单已更新，购物车清空失败");
+            return R.fail("订单提交成功，购物车清空失败");
         }
     }
 
@@ -211,6 +218,80 @@ public class OrderController {
 
         return R.success(pageInfo);
     }
+
+    /**
+     * 取消订单接口（删除订单+明细，允许重新提交）
+     * 核心规则：仅允许在非配送时段取消「本日菜单时间范围」内的订单
+     */
+    @PostMapping("/cancel/{orderId}")
+    @Transactional(rollbackFor = Exception.class)
+    public R<String> cancelOrder(@PathVariable Long orderId, HttpServletRequest request) {
+        // 1. 基础校验：用户登录状态
+        MyUser currUser = (MyUser) request.getSession().getAttribute("currUser");
+        if (currUser == null || currUser.getUserId() == null) {
+            throw new CustomException("用户未登录，请先登录");
+        }
+        Long userId = currUser.getUserId();
+
+        // 2. 校验订单是否存在且归属当前用户
+        OrderForm orderForm = orderFormService.getById(orderId);
+        if (orderForm == null) {
+            throw new CustomException("订单不存在，无法取消");
+        }
+        if (!userId.equals(orderForm.getUserId())) {
+            throw new CustomException("无权取消他人订单");
+        }
+
+        // 3. 校验：是否处于配送时段（配送时段禁止取消）
+        TimeConfig timeConfig = timeConfigService.getCurrentConfig();
+        String orderDeadlineStr = timeConfig.getOrderDeadline() == null ? "09:00:00" : timeConfig.getOrderDeadline();
+        String mealStartTimeStr = timeConfig.getMealStartTime() == null ? "11:30:00" : timeConfig.getMealStartTime();
+
+        LocalDate today = LocalDate.now();
+        Date now = new Date();
+        Date todayOrderDeadline = MyTimeUtils.getDateWithTime(today, orderDeadlineStr);
+        Date todayMealStartTime = MyTimeUtils.getDateWithTime(today, mealStartTimeStr);
+
+        boolean isInDeliveryPeriod = !now.before(todayOrderDeadline) && !now.after(todayMealStartTime);
+        if (isInDeliveryPeriod) {
+            throw new CustomException("当前处于配送时间段，禁止取消订单！");
+        }
+
+        // 4. 校验：订单是否在「本日菜单时间范围」内（仅允许取消本日菜单内的订单）
+        Date todayMenuStartTime, todayMenuEndTime;
+        LocalDate baseDate;
+        if (MyTimeUtils.isAfterTodayOrderDeadline(orderDeadlineStr)) {
+            baseDate = MyTimeUtils.getToday();
+            todayMenuStartTime = MyTimeUtils.getDateWithTime(baseDate, mealStartTimeStr);
+            todayMenuEndTime = MyTimeUtils.getDateWithTime(baseDate.plusDays(1), orderDeadlineStr);
+        } else {
+            baseDate = MyTimeUtils.getYesterday();
+            todayMenuStartTime = MyTimeUtils.getDateWithTime(baseDate, mealStartTimeStr);
+            todayMenuEndTime = MyTimeUtils.getDateWithTime(baseDate.plusDays(1), orderDeadlineStr);
+        }
+
+        if (orderForm.getOrderTime().before(todayMenuStartTime) || orderForm.getOrderTime().after(todayMenuEndTime)) {
+            throw new CustomException("仅可取消本日菜单时间范围内的订单，历史订单无法取消");
+        }
+
+        // 5. 删除订单明细
+        LambdaQueryWrapper<BlanketOrder> blanketQuery = new LambdaQueryWrapper<>();
+        blanketQuery.eq(BlanketOrder::getOrderId, orderId);
+        boolean removeDetail = blanketOrderService.remove(blanketQuery);
+        if (!removeDetail) {
+            log.warn("用户{}取消订单{}时，明细删除失败", userId, orderId);
+        }
+
+        // 6. 删除主订单
+        boolean removeMain = orderFormService.removeById(orderId);
+        if (!removeMain) {
+            throw new CustomException("订单取消失败：主订单删除失败");
+        }
+
+        log.info("用户{}成功取消订单，订单号：{}", userId, orderId);
+        return R.success("订单取消成功，您可重新提交新订单");
+    }
+
 
     /**
      * 厨师专栏订单分页接口

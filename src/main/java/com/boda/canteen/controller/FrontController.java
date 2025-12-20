@@ -7,10 +7,7 @@ import cn.hutool.poi.excel.ExcelWriter;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.boda.canteen.common.MyTimeUtils;
 import com.boda.canteen.entity.*;
-import com.boda.canteen.security.service.BlanketOrderService;
-import com.boda.canteen.security.service.MenuService;
-import com.boda.canteen.security.service.OrderFormService;
-import com.boda.canteen.security.service.ShopCartService;
+import com.boda.canteen.security.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,6 +19,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import java.time.LocalDate;
 import java.util.*;
 
 
@@ -45,6 +44,8 @@ public class FrontController {
     @Autowired
     private BlanketOrderService blanketOrderService;
 
+    @Autowired
+    private TimeConfigService timeConfigService;
     /**
      * 跳转登出页面（即登录页面）
      */
@@ -152,20 +153,42 @@ public class FrontController {
         String workInformation = currUser.getWorkInformation();
         request.getSession().setAttribute("workInformation", workInformation);
 
-        // 加载今日订单数据
-        Date begin = DateUtil.beginOfDay(DateUtil.date());
-        Date end = DateUtil.endOfDay(DateUtil.date());
+        // ===== 1. 核心修改：计算本日菜单时间范围（替代原自然日范围）=====
+        // 获取时间配置
+        TimeConfig timeConfig = timeConfigService.getCurrentConfig();
+        String mealStartTimeStr = timeConfig.getMealStartTime() == null ? "11:30:00" : timeConfig.getMealStartTime();
+        String orderDeadlineStr = timeConfig.getOrderDeadline() == null ? "09:00:00" : timeConfig.getOrderDeadline();
+
+        // 计算本日菜单时间范围（与MenuController中今日菜单逻辑完全对齐）
+        Date todayMenuStartTime, todayMenuEndTime;
+        LocalDate baseDate;
+        if (MyTimeUtils.isAfterTodayOrderDeadline(orderDeadlineStr)) {
+            // 当前时间已超过本日orderDeadline → 本日菜单：本日mealStartTime ~ 明日orderDeadline
+            baseDate = MyTimeUtils.getToday();
+            todayMenuStartTime = MyTimeUtils.getDateWithTime(baseDate, mealStartTimeStr);
+            todayMenuEndTime = MyTimeUtils.getDateWithTime(baseDate.plusDays(1), orderDeadlineStr);
+        } else {
+            // 当前时间未超过本日orderDeadline → 本日菜单：昨日mealStartTime ~ 本日orderDeadline
+            baseDate = MyTimeUtils.getYesterday();
+            todayMenuStartTime = MyTimeUtils.getDateWithTime(baseDate, mealStartTimeStr);
+            todayMenuEndTime = MyTimeUtils.getDateWithTime(baseDate.plusDays(1), orderDeadlineStr);
+        }
+        log.info("用户{}本日菜单时间范围：{} ~ {}", userId,
+                DateUtil.formatDateTime(todayMenuStartTime),
+                DateUtil.formatDateTime(todayMenuEndTime));
+
+        // ===== 2. 加载本日菜单时间范围内的订单数据（替代原自然日订单）=====
         LambdaQueryWrapper<OrderForm> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(OrderForm::getUserId, userId);
-        queryWrapper.between(OrderForm::getOrderTime, begin, end);
+        queryWrapper.eq(OrderForm::getUserId, userId)
+                .between(OrderForm::getOrderTime, todayMenuStartTime, todayMenuEndTime);
         List<OrderForm> orderList = orderFormService.list(queryWrapper);
         request.getSession().setAttribute("orderList", orderList);
 
-        // 查询所有总括订单
+        // ===== 3. 原有逻辑保留：查询所有总括订单（按需可优化，非核心）=====
         List<BlanketOrder> blanketOrderList = blanketOrderService.list();
         request.getSession().setAttribute("blanketOrderList", blanketOrderList);
 
-        // 加载月度订单数据
+        // ===== 4. 加载月度订单数据（原有逻辑保留，无需修改）=====
         String monDate = DateUtil.formatDate(DateUtil.date()).substring(0, 7);
         request.getSession().setAttribute("monDate", monDate);
         String month = monDate + "-01";
@@ -181,7 +204,10 @@ public class FrontController {
         Long monTotalPrice = 0L;
         List<BlanketOrder> monBlanketOrderList = new ArrayList<>();
         for (OrderForm orderForm : monOrderList){
-            monTotalPrice += orderForm.getOrderPrice();
+            // 注意：若OrderForm的orderPrice为空，需从BlanketOrder汇总（可选优化）
+            if (orderForm.getOrderPrice() != null) {
+                monTotalPrice += orderForm.getOrderPrice();
+            }
             LambdaQueryWrapper<BlanketOrder> blanketOrderLambdaQueryWrapper = new LambdaQueryWrapper<>();
             blanketOrderLambdaQueryWrapper.eq(BlanketOrder::getOrderId, orderForm.getOrderId());
             monBlanketOrderList.addAll(blanketOrderService.list(blanketOrderLambdaQueryWrapper));
