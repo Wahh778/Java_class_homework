@@ -179,7 +179,6 @@
                             'font-size': '18px',
                             'right': '20px'
                         });
-
                         // 取消按钮事件
                         $('#cancelBtn').click(function() {
                             layer.closeAll();
@@ -188,7 +187,7 @@
                         $('#confirmBtn').click(function() {
                             layer.closeAll();
                             let loading = layer.load();
-                            let downloadUrl = "http://localhost:8088/order/printCaterer/" + checkIds;
+                            let downloadUrl = "http://localhost:8088/order/exportExcel/" + checkIds;
                             let label = $("<a>");
                             label.prop("href",downloadUrl);
                             $("body").append(label);
