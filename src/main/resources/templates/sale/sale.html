@@ -188,7 +188,7 @@
                     data: {month: month},
                     success: function(res) {
                         layer.close(loading);
-                        if (res.code === 1 || res.success) {
+                        if (res.code === 200 || res.success) {
                             layer.msg(res.msg, {icon: 1});
                             // 刷新表格
                             table.reload('user-table', {

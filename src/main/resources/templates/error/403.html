@@ -19,15 +19,61 @@
 <!--	</body>-->
 <!--</html>-->
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
 <head>
 	<meta charset="utf-8">
-	<title></title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+	<title>403 - 权限不足</title>
 	<link th:href="@{/component/pear/css/pear.css}" rel="stylesheet" />
 	<link th:href="@{/admin/css/other/error.css}" rel="stylesheet" />
 	<style>
+		/* 全局样式重置与基础配置 */
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+
+		body {
+			/* 渐变背景，提升质感 */
+			background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+			min-height: 100vh;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-family: 'Microsoft Yahei', 'PingFang SC', 'Helvetica Neue', sans-serif;
+		}
+
+		/* 整体容器 - 弹性布局适配移动端 */
+		.content {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			gap: 40px;
+			padding: 20px;
+			max-width: 800px;
+			width: 100%;
+			/* 响应式布局：移动端垂直排列 */
+			flex-wrap: wrap;
+		}
+
+		/* 图片容器 - 限制尺寸，增强动画质感 */
+		.content .logo-box {
+			width: 180px;
+			height: 180px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			/* 图片背景光晕，提升视觉层次 */
+			box-shadow: 0 0 30px rgba(100, 149, 237, 0.3);
+			border-radius: 50%;
+			background: rgba(255, 255, 255, 0.8);
+		}
+
 		/* 图片旋转动画 - 匀速循环旋转，保留原有尺寸 */
 		.content img {
+			width: 120px;
+			height: auto;
 			animation: imgRotate 8s linear infinite;
 			/* 防止旋转时位移 */
 			transform-origin: center center;
@@ -43,11 +89,24 @@
 			}
 		}
 
+		/* 右侧文字内容容器 */
+		.content-r {
+			text-align: center;
+			flex: 1;
+			min-width: 280px;
+		}
+
 		/* 403字体跳动动画 */
 		.content-r h1 {
+			font-size: 120px;
+			font-weight: 700;
+			color: #6495ed;
 			animation: numberJump 1s ease-in-out infinite;
 			/* 保留原有字体大小，仅添加动画 */
 			position: relative;
+			/* 文字阴影增强视觉效果 */
+			text-shadow: 0 4px 15px rgba(100, 149, 237, 0.2);
+			margin-bottom: 15px;
 		}
 
 		/* 跳动动画关键帧 - 上下轻微跳动 */
@@ -63,18 +122,83 @@
 			}
 		}
 
-		/* 可选：给跳动的403加一点阴影增强视觉效果（不影响布局） */
-		.content-r h1 {
-			text-shadow: 0 4px 6px rgba(0,0,0,0.1);
+		/* 提示文字样式优化 */
+		.content-r p {
+			font-size: 18px;
+			color: #555;
+			line-height: 1.6;
+			margin-bottom: 30px;
+			/* 文字渐变色，提升美观度 */
+			background: linear-gradient(90deg, #333, #666);
+			-webkit-background-clip: text;
+			background-clip: text;
+			color: transparent;
+		}
+
+		/* 新增：返回按钮样式，提升交互性 */
+		.back-btn {
+			display: inline-block;
+			padding: 12px 30px;
+			background: linear-gradient(135deg, #6495ed, #4169e1);
+			color: #fff;
+			text-decoration: none;
+			border-radius: 30px;
+			font-size: 16px;
+			font-weight: 500;
+			transition: all 0.3s ease;
+			box-shadow: 0 4px 15px rgba(100, 149, 237, 0.3);
+		}
+
+		.back-btn:hover {
+			transform: translateY(-3px);
+			box-shadow: 0 8px 20px rgba(100, 149, 237, 0.5);
+			color: #fff;
+			text-decoration: none;
+		}
+
+		.back-btn:active {
+			transform: translateY(0);
+			box-shadow: 0 4px 15px rgba(100, 149, 237, 0.3);
+		}
+
+		/* 响应式适配：小屏幕调整尺寸 */
+		@media (max-width: 576px) {
+			.content .logo-box {
+				width: 140px;
+				height: 140px;
+			}
+
+			.content img {
+				width: 90px;
+			}
+
+			.content-r h1 {
+				font-size: 80px;
+			}
+
+			.content-r p {
+				font-size: 16px;
+			}
+
+			.back-btn {
+				padding: 10px 25px;
+				font-size: 14px;
+			}
 		}
 	</style>
 </head>
 <body>
 <div class="content">
-	<img th:src="@{/admin/images/logo.png}" alt="">
+	<div class="logo-box">
+		<img th:src="@{/admin/images/logo.png}" alt="系统logo">
+	</div>
 	<div class="content-r">
 		<h1>403</h1>
-		<p>抱歉，你无权访问该页面</p>
+		<p>抱歉，你暂无权限访问该页面，请联系管理员分配权限</p>
+		<!-- 新增返回按钮，方便用户返回上一页或首页 -->
+		<a href="javascript:history.back()" class="back-btn">返回上一页</a>
+		<!-- 可选：添加返回首页按钮 -->
+		<!-- <a th:href="@{/admin/index}" class="back-btn" style="margin-left: 15px;">返回首页</a> -->
 	</div>
 </div>
 <script th:src="@{/component/layui/layui.js}"></script>

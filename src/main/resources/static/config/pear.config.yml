@@ -1,7 +1,7 @@
 ## 网站配置
 logo: 
   ## 网站名称
-  title: "My Canteen"
+  title: "企业 食堂"
   ## 网站图标
   image: "/admin/images/logo1.png"
 ## 菜单配置
