@@ -1,7 +1,7 @@
 package com.boda.canteen.controller;
+
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.IoUtil;
-
 import cn.hutool.poi.excel.ExcelUtil;
 import cn.hutool.poi.excel.ExcelWriter;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -22,7 +22,6 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.time.LocalDate;
 import java.util.*;
-
 
 /**
  * 前台业务加视图控制器
@@ -46,41 +45,64 @@ public class FrontController {
 
     @Autowired
     private TimeConfigService timeConfigService;
+
     /**
      * 跳转登出页面（即登录页面）
      */
     @GetMapping("/logout")
-    public String logout(HttpServletRequest request){
+    public String logout(HttpServletRequest request) {
         SecurityContextHolder.clearContext();
         request.getSession().removeAttribute("currUser");
         return "login";
     }
 
     /**
-     * 跳转首页
+     * 跳转首页 - 核心修改：查询「今日菜单」而非一周/明日菜单
      */
     @GetMapping("/toMain")
-    public String toMain(HttpServletRequest request){
+    public String toMain(HttpServletRequest request) {
+        // 1. 获取数据库中的时间配置（配餐开始时间、订餐截止时间）
+        TimeConfig timeConfig = timeConfigService.getCurrentConfig();
+        String mealStartTime = timeConfig.getMealStartTime(); // 配餐开始时间（HH:mm:ss）
+        String orderDeadline = timeConfig.getOrderDeadline(); // 订餐截止时间（HH:mm:ss）
+
+        // 2. 计算今日菜单的时间范围（与MenuController的今日菜单逻辑完全一致）
+        Date todayMenuStartTime, todayMenuEndTime;
+        LocalDate baseDate;
+        if (MyTimeUtils.isAfterTodayOrderDeadline(orderDeadline)) {
+            // 当前时间已超过本日订餐截止 → 今日菜单：本日配餐开始 ~ 明日订餐截止
+            baseDate = MyTimeUtils.getToday();
+            todayMenuStartTime = MyTimeUtils.getDateWithTime(baseDate, mealStartTime);
+            todayMenuEndTime = MyTimeUtils.getDateWithTime(baseDate.plusDays(1), orderDeadline);
+        } else {
+            // 当前时间未超过本日订餐截止 → 今日菜单：昨日配餐开始 ~ 本日订餐截止
+            baseDate = MyTimeUtils.getYesterday();
+            todayMenuStartTime = MyTimeUtils.getDateWithTime(baseDate, mealStartTime);
+            todayMenuEndTime = MyTimeUtils.getDateWithTime(baseDate.plusDays(1), orderDeadline);
+        }
+
+        log.info("首页今日菜单查询时间范围：{} ~ {}",
+                DateUtil.formatDateTime(todayMenuStartTime),
+                DateUtil.formatDateTime(todayMenuEndTime));
+
+        // 3. 按今日菜单时间范围查询菜单
         LambdaQueryWrapper<Menu> queryWrapper = new LambdaQueryWrapper<>();
-
-        // 获取当前时间的一周开始与一周结束
-        Date weekOfBeginTime = MyTimeUtils.getDayOfBeginTime();
-        Date weekOfEndTime = MyTimeUtils.getDayOfEndTime();
-
-        queryWrapper.between(Menu::getCreateTime, weekOfBeginTime, weekOfEndTime)
+        queryWrapper.between(Menu::getCreateTime, todayMenuStartTime, todayMenuEndTime)
                 .orderByDesc(Menu::getCreateTime);
 
-        List<Menu> menuList = menuService.list(queryWrapper);
-        request.getSession().setAttribute("menuList", menuList);
+        List<Menu> todayMenuList = menuService.list(queryWrapper);
+        // 将今日菜单存入session，供前端页面渲染
+        request.getSession().setAttribute("menuList", todayMenuList);
 
         return "front/main";
     }
 
+    // 其他方法保持不变...
     /**
      * 跳转菜品详情页面
      */
     @GetMapping("/toDetail/{menuId}")
-    public String toDetail(@PathVariable Long menuId, HttpServletRequest request){
+    public String toDetail(@PathVariable Long menuId, HttpServletRequest request) {
         Menu menuDetail = menuService.getById(menuId);
         request.getSession().setAttribute("menuDetail", menuDetail);
         return "front/detail";
@@ -90,7 +112,7 @@ public class FrontController {
      * 跳转购物车页面
      */
     @GetMapping("/toShopCart")
-    public String toShopCart(){
+    public String toShopCart() {
         return "front/shopcart";
     }
 
@@ -124,7 +146,7 @@ public class FrontController {
         List<ShopCart> shopCartList = shopCartService.list(queryWrapper);
         long totalPrice = 0;
         long totalWeight = 0;
-        for (ShopCart sc : shopCartList){
+        for (ShopCart sc : shopCartList) {
             totalWeight += sc.getWeight();
             totalPrice += sc.getTotalPrice();
         }
@@ -138,7 +160,7 @@ public class FrontController {
      * 跳转月度订单页面
      */
     @GetMapping("/toMonOrder")
-    public String toMonOrder(HttpServletRequest request){
+    public String toMonOrder(HttpServletRequest request) {
         // 重定向到用户中心页面
         return "redirect:/front/toUserCenter";
     }
@@ -147,7 +169,7 @@ public class FrontController {
      * 跳转用户中心页面
      */
     @GetMapping("/toUserCenter")
-    public String toUserCenter(HttpServletRequest request){
+    public String toUserCenter(HttpServletRequest request) {
         MyUser currUser = (MyUser) request.getSession().getAttribute("currUser");
         Long userId = currUser.getUserId();
         String workInformation = currUser.getWorkInformation();
@@ -203,7 +225,7 @@ public class FrontController {
         // 统计月度总金额
         Long monTotalPrice = 0L;
         List<BlanketOrder> monBlanketOrderList = new ArrayList<>();
-        for (OrderForm orderForm : monOrderList){
+        for (OrderForm orderForm : monOrderList) {
             // 注意：若OrderForm的orderPrice为空，需从BlanketOrder汇总（可选优化）
             if (orderForm.getOrderPrice() != null) {
                 monTotalPrice += orderForm.getOrderPrice();
@@ -222,7 +244,7 @@ public class FrontController {
      * 月度订单打印
      */
     @GetMapping("/print")
-    public void print(HttpServletResponse response, HttpServletRequest request){
+    public void print(HttpServletResponse response, HttpServletRequest request) {
         // 获取到查询出的用户信息、月份、总价格、总括订单信息
         MyUser currUser = (MyUser) request.getSession().getAttribute("currUser");
         String monDate = (String) request.getSession().getAttribute("monDate");
@@ -243,7 +265,7 @@ public class FrontController {
             list1.add(map);
             writer.write(list1, true);
             ArrayList<Map<String, Object>> list2 = new ArrayList<>();
-            for (BlanketOrder bo : monBlanketOrderList){
+            for (BlanketOrder bo : monBlanketOrderList) {
                 Map<String, Object> map1 = new LinkedHashMap<>();
                 map1.put("时间", DateUtil.formatDateTime(bo.getCreateTime()));
                 map1.put("菜名", bo.getName());
