@@ -271,6 +271,9 @@
 		<img th:src="@{/common/getCode}" class="codeImage" id="codeImg" onclick="reClick()" alt="验证码"/>
 	</div>
 	<div class="layui-form-item">
+		<input type="checkbox" id="remember" lay-skin="primary" title="记住密码" />
+	</div>
+	<div class="layui-form-item">
 		<button type="button" class="pear-btn pear-btn-success login" lay-submit lay-filter="login">
 			登 录
 		</button>
@@ -281,16 +284,68 @@
 <script th:src="@{/component/layui/layui.js}"></script>
 <script th:src="@{/component/pear/pear.js}"></script>
 <script>
+	// 读取cookie
+	function getCookie(name) {
+		var arr, reg = new RegExp("(^| )" + name + "=([^;]*)(;|$)");
+		if (arr = document.cookie.match(reg))
+			return unescape(arr[2]);
+		else
+			return null;
+	}
+
+	// 设置cookie
+	function setCookie(name, value, time) {
+		var strsec = getsec(time);
+		var exp = new Date();
+		exp.setTime(exp.getTime() + strsec * 1);
+		document.cookie = name + "=" + escape(value) + ";expires=" + exp.toGMTString();
+	}
+
+	// 时间转换
+	function getsec(str) {
+		var str1 = str.substring(1, str.length) * 1;
+		var str2 = str.substring(0, 1);
+		if (str2 == "s") {
+			return str1 * 1000;
+		} else if (str2 == "h") {
+			return str1 * 60 * 60 * 1000;
+		} else if (str2 == "d") {
+			return str1 * 24 * 60 * 60 * 1000;
+		}
+	}
+
+	// 清除cookie
+	function clearCookie(name) {
+		var exp = new Date();
+		exp.setTime(exp.getTime() - 1);
+		var cval = getCookie(name);
+		if (cval != null)
+			document.cookie = name + "=" + cval + ";expires=" + exp.toGMTString();
+	}
+
 	layui.use(['form', 'button', 'popup'], function() {
 		var $ = layui.$;
 		var form = layui.form;
 		var button = layui.button;
 		var popup = layui.popup;
 
+		// 页面加载时读取cookie
+		$(function() {
+			var username = getCookie('username');
+			var password = getCookie('password');
+			if (username != null && password != null) {
+				$('#username').val(username);
+				$('#password').val(password);
+				$('#remember').prop('checked', true);
+			}
+			form.render();
+		});
+
 		form.on('submit(login)', function(data) {
 			var name = $('#username').val();
 			var password = $('#password').val();
 			var code = $('#code').val();
+			var remember = $('#remember').prop('checked');
 
 			if (!name || !password || !code) {
 				popup.failure("请填写完整信息！");
@@ -309,6 +364,15 @@
 				contentType: "application/x-www-form-urlencoded",
 				success: function (res){
 					if (res.code === 200) {
+						// 根据复选框状态设置cookie
+						if (remember) {
+							setCookie('username', name, '7d');
+							setCookie('password', password, '7d');
+						} else {
+							clearCookie('username');
+							clearCookie('password');
+						}
+
 						button.load({
 							elem: '.login',
 							time: 500,
