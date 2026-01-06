@@ -177,7 +177,7 @@ public class SaleController {
             if (StrUtil.isNotEmpty(month)) {
                 String monthStart = month + "-01";
                 Date begin = MyTimeUtils.getMonthOfBeginTime(monthStart);
-                Date end = new Date();
+                Date end = MyTimeUtils.getMonthOfEndTime(monthStart);
                 orderFormWrapper.between("orderTime", begin, end);
             }
 
