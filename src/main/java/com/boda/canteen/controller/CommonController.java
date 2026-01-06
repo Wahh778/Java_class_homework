@@ -83,4 +83,13 @@ public class CommonController {
             e.printStackTrace();
         }
     }
+
+    /**
+     * 获取在线人数
+     */
+    @GetMapping("/getOnlineCount")
+    public R<Integer> getOnlineCount(){
+        int count = com.boda.canteen.config.OnlineUserListener.getOnlineCount();
+        return R.success(count);
+    }
 }

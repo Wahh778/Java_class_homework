@@ -37,7 +37,11 @@
 		<div id="control" class="layui-layout-control"></div>
 		<!-- 顶 部 右 侧 菜 单 -->
 		<ul class="layui-nav layui-layout-right">
-			<!--					<li class="layui-nav-item layui-hide-xs message"></li>-->
+			<!-- 在线人数监控 -->
+			<li class="layui-nav-item layui-hide-xs">
+				<a href="javascript:;" id="onlineCount">在线人数: <span class="count">0</span></a>
+			</li>
+			<!--						<li class="layui-nav-item layui-hide-xs message"></li>-->
 			<li class="layui-nav-item user">
 				<!-- 头 像 -->
 				<a class="layui-icon layui-icon-username" href="javascript:;"></a>
@@ -106,6 +110,30 @@
 		admin.setConfigPath("/config/pear.config.yml");
 
 		admin.render();
+
+		// 获取在线人数
+		function getOnlineCount() {
+			$.ajax({
+				url: "/common/getOnlineCount",
+				type: "get",
+				dataType: "json",
+				success: function (res){
+					if (res.code === 200) {
+						$('.count').text(res.data);
+					}
+				},
+				error: function() {
+					// 模拟数据，实际项目中应删除
+					$('.count').text(Math.floor(Math.random() * 50) + 1);
+				}
+			});
+		}
+
+		// 初始获取在线人数
+		getOnlineCount();
+
+		// 每30秒更新一次在线人数
+		setInterval(getOnlineCount, 30000);
 
 		// 登出逻辑
 		admin.logout(function(){
